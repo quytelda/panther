@@ -1,0 +1,7 @@
+Thank You for using Panther.
+
+Usage: panther [options]
+
+Options:
+-ver    --version       Print the Panther version number
+-h      --help          Show this help message.
