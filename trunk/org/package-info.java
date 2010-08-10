@@ -15,8 +15,7 @@
  */
 
 /**
- * The org package.  Part of the URL org.tamalin.  This was chosen because it ensures that the package name is unique.  No one else can own the same domain
- * name.
+ * The org package is the top level package for the Panther program.
  */
 
 package org;

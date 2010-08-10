@@ -15,8 +15,7 @@
  */
 
 /**
- * The org.tamalin.panther package.  This is for the panther section of org.tamalin.  This was chosen because it ensures that the package name is unique.
- * No one else can own the same domain name.
+ * The org.tamalin.panther package contains most of the files for Panther.
  */
 
 package org.tamalin.panther;

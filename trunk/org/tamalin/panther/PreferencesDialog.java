@@ -17,6 +17,7 @@
 package org.tamalin.panther;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,7 +26,8 @@ import java.awt.event.ActionListener;
  * The user options and preferences.
  *
  * @author Quytelda K. Gaiwin
- * @since 3.1.0
+ * @version 2.0
+ * @since 3.1
  */
 public class PreferencesDialog extends JDialog
 {
@@ -89,6 +91,7 @@ public class PreferencesDialog extends JDialog
         centerPanel.setLayout(new GridLayout(2, 1));
         centerPanel.add(digestSHA1Option);
         centerPanel.add(digestMD5Option);
+        centerPanel.setBorder(BorderFactory.createTitledBorder("Fingerprint Algorithm"));
 
         bottomPanel.setLayout(new GridLayout(1, 2));
         bottomPanel.add(okOption);

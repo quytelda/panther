@@ -15,8 +15,8 @@
  */
 
 /**
- * The org.tamalin package.  Part of the URL org.tamalin.  This was chosen because it ensures that the package name is unique.  No one else can own the same
- * domain name.
+ * The org.tamalin package contains the panther package, which holds most of the information.  The name follows
+ * the tradition of unique package names derived from domain names.
  */
 
 package org.tamalin;

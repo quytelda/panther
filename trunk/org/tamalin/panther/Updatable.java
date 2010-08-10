@@ -17,9 +17,9 @@
 package org.tamalin.panther;
 
 /**
- * @author Quytelda
- *         Date: Jun 26, 2010
- *         Time: 8:30:42 PM
+ * @author Quytelda K. Gaiwin
+ * Date: Jun 26, 2010
+ * Time: 8:30:42 PM
  * @version 1.0
  * @since 4.0
  */

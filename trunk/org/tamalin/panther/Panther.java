@@ -45,8 +45,9 @@ import java.util.Scanner;
  * This class is the main class of the Panther program.
  * It contains the main method, and most of the GUI code.
  *
- * @author Tamalin
- * @version 4.0 S3 August 7 2010
+ * @author Quytelda K. Gaiwin
+ * @version 4.0 August 7 2010
+ * @since 1.0
  */
 public class Panther extends JFrame implements Updatable
 {
@@ -81,11 +82,9 @@ public class Panther extends JFrame implements Updatable
         /* Each localized text string will be extracted from the .properties file. */
 
         /* Initialize the JPanels first. */
-        pnlNorth = new JPanel();
+        centerPanel = new JPanel();
         pnlNorth_North = new JPanel();
-        pnlNorth_South = new JPanel();
-        pnlSouth = new JPanel();
-        pnlCenter = new JPanel();
+        tools = new JToolBar(JToolBar.HORIZONTAL);
 
         /* Next handle the text components. */
         txtPlain = new JTextArea(15, 50);
@@ -106,7 +105,13 @@ public class Panther extends JFrame implements Updatable
         btnHide = new JButton((String) properties.get("hideButtonLabel"));
         btnSave = new JButton((String) properties.get("saveButtonLabel"));
         btnOpen = new JButton((String) properties.get("openButtonLabel"));
-        spPlain = new JScrollPane(txtPlain);
+        spPlain = new JScrollPane(txtPlain)
+        {
+            public Insets getInsets()
+            {
+                return new Insets(0, 0, 0, 0);
+            }
+        };
 
         mb = new JMenuBar();
 
@@ -127,10 +132,12 @@ public class Panther extends JFrame implements Updatable
         lockItem = new JMenuItem((String) properties.get("lockButtonLabel"));
         unlockItem = new JMenuItem((String) properties.get("unlockButtonLabel"));
         hideItem = new JMenuItem("Hide");
+        aboutMenuItem = new JMenuItem("About");
 
 
         /* Find the current version number. */
         VERSION = (String) properties.get("versionNumber");
+        COPYRIGHT_TEXT = (String) properties.get("copyright_text");
 
 
         /* Put together the user interface. */
@@ -222,11 +229,7 @@ public class Panther extends JFrame implements Updatable
 
             public void actionPerformed(ActionEvent evt)
             {
-                if (verbose)
-                {
-                    output("Displaying \'About\' dialog box...");
-                }
-                JOptionPane.showMessageDialog(Panther.this, aboutString + VERSION, btnAbout.getText(), JOptionPane.INFORMATION_MESSAGE);
+
             }
         });
 
@@ -485,9 +488,9 @@ public class Panther extends JFrame implements Updatable
         {
             output("Adding UI component main panels.");
         }
-        this.add(pnlNorth, BorderLayout.NORTH);
-        this.add(pnlSouth, BorderLayout.SOUTH);
-        this.add(pnlCenter, BorderLayout.CENTER);
+        tools.setFloatable(false);
+        this.add(tools, BorderLayout.NORTH);
+        this.add(centerPanel, BorderLayout.CENTER);
 
 
         //Lay out the UI Components the components in the container.
@@ -495,9 +498,29 @@ public class Panther extends JFrame implements Updatable
         {
             output("Laying out UI panels.");
         }
-        pnlNorth.setLayout(new BorderLayout());
-        pnlNorth.add(pnlNorth_North, BorderLayout.NORTH);
-        pnlNorth.add(pnlNorth_South, BorderLayout.SOUTH);
+        centerPanel.setLayout(new BorderLayout());
+        centerPanel.add(pnlNorth_North, BorderLayout.NORTH);
+        centerPanel.add(spPlain, BorderLayout.SOUTH);
+
+        /* ---------- Mac OS X Only ----------- */
+        if (System.getProperty("os.name").equals("Mac OS X"))
+        {
+            String style = "segmentedCapsule";
+            btnEncrypt.putClientProperty("JButton.buttonType", style);
+            btnEncrypt.putClientProperty("JButton.segmentPosition", "first");
+            btnDecrypt.putClientProperty("JButton.buttonType", style);
+            btnDecrypt.putClientProperty("JButton.segmentPosition", "last");
+            btnLock.putClientProperty("JButton.buttonType", style);
+            btnLock.putClientProperty("JButton.segmentPosition", "first");
+            btnUnlock.putClientProperty("JButton.buttonType", style);
+            btnUnlock.putClientProperty("JButton.segmentPosition", "last");
+            btnHide.putClientProperty("JButton.buttonType", style);
+            btnHide.putClientProperty("JButton.segmentPosition", "only");
+            btnSave.putClientProperty("JButton.buttonType", style);
+            btnSave.putClientProperty("JButton.segmentPosition", "first");
+            btnOpen.putClientProperty("JButton.buttonType", style);
+            btnOpen.putClientProperty("JButton.segmentPosition", "last");
+        }
 
 
         //Add all the UI components to the frame.
@@ -507,17 +530,22 @@ public class Panther extends JFrame implements Updatable
         {
             output("Adding UI components");
         }
+        tools.add(btnEncrypt);
+        tools.add(btnDecrypt);
+        tools.add(btnLock);
+        tools.add(btnUnlock);
+        tools.add(btnHide);
+        tools.add(btnSave);
+        tools.add(btnOpen);
         pnlNorth_North.add(lblPassword);
         pnlNorth_North.add(txtPassword);
-        pnlNorth_South.add(spPlain);
-        pnlCenter.add(btnEncrypt);
-        pnlCenter.add(btnDecrypt);
-        pnlCenter.add(btnAbout);
-        pnlCenter.add(btnLock);
-        pnlCenter.add(btnUnlock);
-        pnlCenter.add(btnHide);
-        pnlCenter.add(btnSave);
-        pnlCenter.add(btnOpen);
+        spPlain.setBorder(null);
+
+
+        Component[] components = tools.getComponents();
+
+        for (Component c : components)
+            c.setFocusable(false);
 
         mb.add(fileMenu);
         mb.add(editMenu);
@@ -534,6 +562,7 @@ public class Panther extends JFrame implements Updatable
         privacyMenu.add(this.hideItem);
         privacyMenu.add(lockItem);
         privacyMenu.add(unlockItem);
+        helpMenu.add(aboutMenuItem);
 
         this.setJMenuBar(mb);
 
@@ -658,6 +687,14 @@ public class Panther extends JFrame implements Updatable
         }
     }
 
+    public void showAbout()
+    {
+        StringBuilder message = new StringBuilder(aboutString);
+        message.append(VERSION + System.getProperty("line.separator"));
+        message.append(COPYRIGHT_TEXT);
+        JOptionPane.showMessageDialog(Panther.this, message.toString(), btnAbout.getText(), JOptionPane.INFORMATION_MESSAGE);
+    }
+
     public void setDigestAlgorithm(String alg)
     {
         digestAlgorithm = alg;
@@ -668,7 +705,9 @@ public class Panther extends JFrame implements Updatable
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
     }
 
-    private JPanel pnlNorth, pnlSouth, pnlCenter, pnlNorth_North, pnlNorth_South;
+    private JPanel centerPanel;
+    private JPanel pnlNorth_North;
+    private JToolBar tools;
     private static JTextArea txtPlain;
     private JButton btnEncrypt, btnDecrypt, btnLock, btnUnlock, btnHide, btnSave, btnOpen;
     private static JPasswordField txtPassword;
@@ -686,6 +725,7 @@ public class Panther extends JFrame implements Updatable
     private JMenu fileMenu, helpMenu;
     private JMenuItem openFileItem, saveFileItem, editPreferencesItem;
     private JMenuItem encryptItem, decryptItem, fingerprintItem, lockItem, unlockItem, hideItem;
+    private JMenuItem aboutMenuItem;
     private static Locale locale = null;
     private CipherRunnable cipherRunnable;
     private String digestAlgorithm;
@@ -693,8 +733,9 @@ public class Panther extends JFrame implements Updatable
     /**
      * The Panther version number.
      * The Panther version number follows this pattern:
-     * [release number] [source release number] [release month] [release year]
+     * [release number] [release month] [release year]
      */
     public static String VERSION;
+    public static String COPYRIGHT_TEXT;
     public static boolean verbose = false;
 }
