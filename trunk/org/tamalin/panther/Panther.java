@@ -59,7 +59,7 @@ public class Panther extends JFrame implements Updatable
     public Panther(Locale locale)
     {
         Toolkit tk = Toolkit.getDefaultToolkit();
-        URL logoURL = Panther.class.getResource("/org/tamalin/panther/resources/logo2.png");
+        URL logoURL = Panther.class.getResource("/org/tamalin/panther/resources/icon_128.png");
         Image img = tk.getImage(logoURL);
         this.setIconImage(img);
 
