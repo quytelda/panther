@@ -74,7 +74,7 @@ public class Panther extends JFrame implements Updatable
         {
             try
             {
-                Class appClass = Class.forName("org.tamalin.panther.MacAppHandler");
+                Class<?> appClass = Class.forName("org.tamalin.panther.MacAppHandler");
                 Object app = appClass.newInstance();
                 Method initializer = appClass.getMethod("init", Panther.class, Image.class);
                 initializer.invoke(app, this, img);
