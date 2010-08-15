@@ -35,21 +35,23 @@ import java.awt.*;
 
 public class MacAppHandler implements ApplicationListener
 {
-    public MacAppHandler(Panther client, Image icon)
+    public MacAppHandler()
+    {
+        app = Application.getApplication();
+        app.setEnabledPreferencesMenu(true);
+        app.setEnabledAboutMenu(true);
+    }
+
+    public void init(Panther client, Image icon)
     {
         c = client;
         app = Application.getApplication();
         app.setDockIconImage(icon);
         app.setEnabledPreferencesMenu(true);
         app.setEnabledAboutMenu(true);
-
-        System.setProperty("apple.laf.useScreenMenuBar", "true");
-        client.getRootPane().putClientProperty("apple.awt.brushMetalLook", Boolean.TRUE);
-    }
-
-    public void init()
-    {
         app.addApplicationListener(this);
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
+        c.getRootPane().putClientProperty("apple.awt.brushMetalLook", Boolean.TRUE);
     }
 
     public void handleAbout(ApplicationEvent applicationEvent)

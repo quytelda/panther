@@ -29,17 +29,19 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Locale;
 import java.util.Properties;
-import java.util.Scanner;
 
 /**
  * This class is the main class of the Panther program.
@@ -64,23 +66,52 @@ public class Panther extends JFrame implements Updatable
         Image img = tk.getImage(logoURL);
         this.setIconImage(img);
 
+        /*
+         * If this is a Mac OS X system, use reflection to load the MacAppHandler class, which
+         * handles all the Apple events that may be thrown at the program.
+         */
         if (System.getProperty("os.name").equals("Mac OS X"))
         {
-            MacAppHandler app = new MacAppHandler(this, img);
-            app.init();
+            try
+            {
+                Class appClass = Class.forName("org.tamalin.panther.MacAppHandler");
+                Object app = appClass.newInstance();
+                Method initializer = appClass.getMethod("init", Panther.class, Image.class);
+                initializer.invoke(app, this, img);
+            }
+            catch(ClassNotFoundException ex)
+            {
+                ex.printStackTrace();
+            }
+            catch (NoSuchMethodException e)
+            {
+                e.printStackTrace();
+            }
+            catch (InvocationTargetException e)
+            {
+                e.printStackTrace();
+            }
+            catch (InstantiationException e)
+            {
+                e.printStackTrace();
+            }
+            catch (IllegalAccessException e)
+            {
+                e.printStackTrace();
+            }
         }
 
         Properties properties = loadLanguageResources(locale.getLanguage());
+
+        /* Deal with the properties. */
+        this.setDigestAlgorithm("SHA-1");
 
         /* Initialize the GUI in whatever language is selected. */
 
         /* Get the text for the about dialog. */
         aboutString = (String) properties.get("aboutBoxText");
 
-        /* Instantiate components. */
-        /* For the components that contain text, provide a localized text string. */
-        /* Each localized text string will be extracted from the .properties file. */
-
+        /* The constructors section. */
         /* Initialize the JPanels first. */
         centerPanel = new JPanel();
         pnlNorth_North = new JPanel();
@@ -141,7 +172,7 @@ public class Panther extends JFrame implements Updatable
 
 
         /* Put together the user interface. */
-        configUI();
+        initUI();
 
         /* Try to instantiate a CipherRunnable with the AES algorithm. */
         try
@@ -363,11 +394,41 @@ public class Panther extends JFrame implements Updatable
                 showPreferences();
             }
         });
+
+        fingerprintItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent evt)
+            {
+                byte[] fingerprint;
+                try
+                {
+                    fingerprint = computeFingerprint(txtPlain.getText().getBytes());
+
+                    /* Construct a dialog to display the digest. */
+                    JPanel controlPanel = new JPanel();
+                    controlPanel.add(new JLabel(getDigestAlgorithm() + " Fingerprint:"));
+                    JTextField copyField = new JTextField(fingerprint.length + 1);
+                    copyField.setEditable(false);
+                    char[] readableFingerprint = new char[fingerprint.length];
+                    for(int i = 0; i < fingerprint.length; i++)
+                        readableFingerprint[i] = (char) fingerprint[i];
+                    copyField.setText(new String(readableFingerprint));
+                    controlPanel.add(copyField);
+                    JOptionPane.showMessageDialog(Panther.this, controlPanel,
+                            "Fingerprint", JOptionPane.INFORMATION_MESSAGE);
+                }
+                catch(NoSuchAlgorithmException ex)
+                {
+                    ex.printStackTrace();
+                }
+            }
+        });
     }
 
     public void showPreferences()
     {
         PreferencesDialog preferencesDialog = new PreferencesDialog(this);
+        preferencesDialog.setDefaultDigestAlg(this.getDigestAlgorithm());
         preferencesDialog.setVisible(true);
         if (preferencesDialog.isApproved())
         {
@@ -473,7 +534,7 @@ public class Panther extends JFrame implements Updatable
     /**
      * Configures and adds the UI components to the frame.
      */
-    public void configUI()
+    public void initUI()
     {
         //Set the UI layout and the frame title.
         if (verbose)
@@ -586,66 +647,6 @@ public class Panther extends JFrame implements Updatable
 
     }
 
-    /**
-     * Displays the program help in the given locale.
-     */
-
-    public static void showHelp()
-    {
-        //Print out the help.
-        System.out.println("Panther " + VERSION);
-        try
-        {
-            String langCode = locale.getLanguage();
-            URL url = Panther.class.getResource("/org/tamalin/panther/resources/help_" + langCode + ".hlp");
-            URLConnection uc = url.openConnection();
-            Scanner s = new Scanner(uc.getInputStream());
-
-            while (s.hasNextLine())
-            {
-                System.out.println(s.nextLine());
-            }
-        }
-        catch (Exception ex)
-        {
-            ex.printStackTrace();
-        }
-
-        //Exit the program.
-        System.exit(0);
-    }
-
-    /**
-     * Establishes the Panther version to the version number of given locale.  It is specified in the language given
-     * in the locale.
-     *
-     * @param locale The locale for that should be used to determine the language to print the help in.
-     * @throws IOException thrown if an IOException occurs while reading the properties file.
-     */
-    public static void establishVersion(Locale locale) throws IOException
-    {
-        /* Create a new Properties object. */
-        Properties props = new Properties();
-
-        URLConnection connection = null;
-
-        try
-        {
-            String langCode = locale.getLanguage();
-            URL url = Panther.class.getResource("/org/tamalin/panther/resources/labels_" + langCode + ".properties");
-            connection = url.openConnection();
-            props.load(connection.getInputStream());
-            VERSION = (String) props.get("versionNumber");
-        }
-        finally
-        {
-            if (connection != null)
-            {
-                connection.getInputStream().close();
-            }
-        }
-    }
-
     public void saveBytes(byte[] data, File file)
     {
         try
@@ -687,10 +688,24 @@ public class Panther extends JFrame implements Updatable
         }
     }
 
+    /**
+     * Computes the message digest, checksum, or "fingerprint" of a byte array.
+     * @param data the data to be digested
+     * @return the message digest as a byte array
+     * @throws NoSuchAlgorithmException  throws a no such algorithm exception when Panther.getDigestAlgorithm() returns
+     * an algorithm which is not supported or known under the current provider.
+     */
+    public byte[] computeFingerprint(byte[] data) throws NoSuchAlgorithmException
+    {
+        MessageDigest md = MessageDigest.getInstance(this.getDigestAlgorithm());
+        return md.digest(data);
+    }
+
     public void showAbout()
     {
         StringBuilder message = new StringBuilder(aboutString);
-        message.append(VERSION + System.getProperty("line.separator"));
+        message.append(VERSION);
+        message.append(System.getProperty("line.separator"));
         message.append(COPYRIGHT_TEXT);
         JOptionPane.showMessageDialog(Panther.this, message.toString(), btnAbout.getText(), JOptionPane.INFORMATION_MESSAGE);
     }
@@ -698,6 +713,11 @@ public class Panther extends JFrame implements Updatable
     public void setDigestAlgorithm(String alg)
     {
         digestAlgorithm = alg;
+    }
+
+    public String getDigestAlgorithm()
+    {
+        return digestAlgorithm;  
     }
 
     public void showError(String title, String message)
@@ -726,14 +746,21 @@ public class Panther extends JFrame implements Updatable
     private JMenuItem openFileItem, saveFileItem, editPreferencesItem;
     private JMenuItem encryptItem, decryptItem, fingerprintItem, lockItem, unlockItem, hideItem;
     private JMenuItem aboutMenuItem;
-    private static Locale locale = null;
     private CipherRunnable cipherRunnable;
     private String digestAlgorithm;
 
     /**
-     * The Panther version number.
-     * The Panther version number follows this pattern:
+     * The Panther version description.
+     * The Panther version description follows this pattern:
      * [release number] [release month] [release year]
+     * =====================================================
+     * The individual release number consists of three
+     * parts:
+     * 1) the major version number - For major changes that introduce
+     *      compatibility issues with older versions.
+     * 2) the minor version number - For moderate to (visibly) large changes
+     *      that do not affect compatibility with older versions.
+     * 3) the micro version number - For bug fixes or trivial changes
      */
     public static String VERSION;
     public static String COPYRIGHT_TEXT;

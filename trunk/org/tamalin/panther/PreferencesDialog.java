@@ -17,7 +17,6 @@
 package org.tamalin.panther;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -40,6 +39,18 @@ public class PreferencesDialog extends JDialog
         initUI();
     }
 
+    public void setDefaultDigestAlg(String alg)
+    {
+        if(alg.equals("SHA-1"))
+        {
+            digestSHA1Option.setSelected(true);
+        }
+        else
+        {
+            digestMD5Option.setSelected(true);  
+        }
+    }
+
     public String getChosenDigestAlgorithm()
     {
         return digestAlgorithm;
@@ -54,11 +65,11 @@ public class PreferencesDialog extends JDialog
     {
         digestSHA1Option = new JRadioButton("SHA-1 Fingerprints");
         digestMD5Option = new JRadioButton("MD5 Fingerprints");
-        bg = new ButtonGroup();
-        cancelOption = new JButton("Cancel");
-        okOption = new JButton("OK");
-        bottomPanel = new JPanel();
-        centerPanel = new JPanel();
+        ButtonGroup bg = new ButtonGroup();
+        JButton cancelOption = new JButton("Cancel");
+        JButton okOption = new JButton("OK");
+        JPanel bottomPanel = new JPanel();
+        JPanel centerPanel = new JPanel();
 
         okOption.addActionListener(new ActionListener()
         {
@@ -104,9 +115,6 @@ public class PreferencesDialog extends JDialog
     }
 
     private JRadioButton digestSHA1Option, digestMD5Option;
-    private ButtonGroup bg;
-    private JPanel bottomPanel, centerPanel;
-    private JButton cancelOption, okOption;
     public static final String SHA1 = "SHA-1";
     public static final String MD5 = "MD5";
     private String digestAlgorithm;

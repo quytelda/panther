@@ -16,7 +16,6 @@
 
 package org.tamalin.panther.file;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -36,6 +35,8 @@ public class FileSaveRunnable implements Runnable
      *
      * @param target   The target file to write to.
      * @param fileData A byte array that will be written to file.
+     * @throws IOException This exception is thrown when an Input/Output error occurs while reading or writing to
+     * a disk file, or if the file can't be created in the first place.
      */
     public FileSaveRunnable(byte[] fileData, File target) throws IOException
     {
@@ -52,7 +53,7 @@ public class FileSaveRunnable implements Runnable
             /* Handle any problems. */
             if (!created)
             {
-                JOptionPane.showMessageDialog(null, "There was a problem creating the file.  Please make sure that you have read and write permissions to the area where the file is located, and that it is not write-protected.", "Error Creating File", JOptionPane.ERROR_MESSAGE);
+                throw new IOException();
             }
         }
     }
