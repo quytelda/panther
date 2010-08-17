@@ -79,7 +79,7 @@ public class Panther extends JFrame implements Updatable
                 Method initializer = appClass.getMethod("init", Panther.class, Image.class);
                 initializer.invoke(app, this, img);
             }
-            catch(ClassNotFoundException ex)
+            catch (ClassNotFoundException ex)
             {
                 ex.printStackTrace();
             }
@@ -118,7 +118,7 @@ public class Panther extends JFrame implements Updatable
         tools = new JToolBar(JToolBar.HORIZONTAL);
 
         /* Next handle the text components. */
-        txtPlain = new JTextArea(15, 50);
+        txtPlain = new JTextArea(20, 55);
         txtPassword = new JPasswordField(20);
 
         /* Then the JButtons and JLabels. */
@@ -225,16 +225,7 @@ public class Panther extends JFrame implements Updatable
 
             public void actionPerformed(ActionEvent evt)
             {
-                if (verbose)
-                {
-                    output("Disabling and reconfiguring UI components.");
-                }
-                setDisplayUnlocked(false);
-
-                btnUnlock.setEnabled(true);
-                tmpPlaintext = txtPlain.getText();
-                txtPlain.setText("");
-                txtPassword.setText("");
+                setLocked(true);
             }
         });
 
@@ -243,24 +234,7 @@ public class Panther extends JFrame implements Updatable
 
             public void actionPerformed(ActionEvent evt)
             {
-                if (verbose)
-                {
-                    output("Enabling and reconfiguring UI components.");
-                }
-                setDisplayUnlocked(true);
-
-                txtPlain.setText(tmpPlaintext);
-                btnUnlock.setEnabled(false);
-                pack();
-            }
-        });
-
-        btnAbout.addActionListener(new ActionListener()
-        {
-
-            public void actionPerformed(ActionEvent evt)
-            {
-
+                setLocked(false);
             }
         });
 
@@ -268,36 +242,7 @@ public class Panther extends JFrame implements Updatable
         {
             public void actionPerformed(ActionEvent ae)
             {
-                /* Create the encryption thread. */
-                byte[] data = txtPlain.getText().getBytes();
-                int cipherMode = Cipher.ENCRYPT_MODE;
-                char[] password = txtPassword.getPassword();
-
-                try
-                {
-                    cipherRunnable.init(data, cipherMode, password, Panther.this);
-                }
-                catch (InvalidKeyException ex)
-                {
-                    ex.printStackTrace();
-                    Panther.this.showError("Invalid", "The provided password has generated an invalid encryption key.");
-                }
-                catch (NoSuchAlgorithmException ex)
-                {
-                    ex.printStackTrace();
-                    showError("Algorithm not found!", "The encryption algorithm in use was not detected.");
-                }
-                catch (InvalidKeySpecException ex)
-                {
-                    ex.printStackTrace();
-                    showError("Invalid", "The generated encryption key has been reported as invalid.");
-                }
-
-                /* Create a thread from the cipherRunnable. */
-                Thread encryptionThread = new Thread(cipherRunnable);
-
-                /* Main the thread. */
-                encryptionThread.start();
+                encrypt();
             }
         });
 
@@ -305,85 +250,7 @@ public class Panther extends JFrame implements Updatable
         {
             public void actionPerformed(ActionEvent e)
             {
-                /* Read the file to be decrypted. */
-                File file;
-
-                /* Make sure the JFileChooser is initialized. */
-                if (Panther.this.fileChooser == null)
-                    fileChooser = new JFileChooser();
-
-                /* Show the file chooser and wait for confirmation. */
-                int confirmed = fileChooser.showOpenDialog(Panther.this);
-
-                /* If the user canceled the dialog, exit the method. */
-                if (confirmed != JFileChooser.APPROVE_OPTION)
-                    return;
-
-                /* Get the selected file. */
-                file = fileChooser.getSelectedFile();
-
-                /* Read the contents of the file into a byte array. */
-                FileInputStream fis = null;
-                byte[] data = new byte[(int) file.length()];
-                try
-                {
-                    fis = new FileInputStream(file);
-                    //noinspection ResultOfMethodCallIgnored
-                    fis.read(data);
-                }
-                catch (FileNotFoundException ex)
-                {
-                    ex.printStackTrace();
-                    showError("File Not Found", "The specified file was not found.");
-                }
-                catch (IOException ex)
-                {
-                    ex.printStackTrace();
-                    showError("IO Error", "Unable to read the file.  Make sure that you have read permission.");
-                }
-                finally
-                {
-                    /* Make sure the stream is closed. */
-                    try
-                    {
-                        if (fis != null)
-                        {
-                            fis.close();
-                        }
-                    }
-                    catch (IOException ex)
-                    {
-                        ex.printStackTrace();
-                    }
-                }
-
-                /* Create the decryption thread. */
-                /* The CipherRunnable must be initialized correctly before it can be run as a thread. */
-                int cipherMode = Cipher.DECRYPT_MODE;
-                char[] password = txtPassword.getPassword();
-
-                try
-                {
-                    cipherRunnable.init(data, cipherMode, password, Panther.this);
-                }
-                catch (InvalidKeyException ex)
-                {
-                    showError("Invalid Key", "The provided password has produced an invalid decryption key.");
-                }
-                catch (NoSuchAlgorithmException ex)
-                {
-                    showError("Unknown Algorithm", "The current decryption algorithm is not available.");
-                }
-                catch (InvalidKeySpecException ex)
-                {
-                    showError("Invalid Key", "The generated encryption key is invalid.");
-                }
-
-                /* Create a thread from the cipherRunnable. */
-                Thread decryptionThread = new Thread(cipherRunnable);
-
-                /* Main the thread. */
-                decryptionThread.start();
+                decrypt();
             }
         });
 
@@ -392,6 +259,22 @@ public class Panther extends JFrame implements Updatable
             public void actionPerformed(ActionEvent evt)
             {
                 showPreferences();
+            }
+        });
+
+        lockItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent evt)
+            {
+                Panther.this.setLocked(true);
+            }
+        });
+
+        unlockItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent evt)
+            {
+                Panther.this.setLocked(false);
             }
         });
 
@@ -410,21 +293,171 @@ public class Panther extends JFrame implements Updatable
                     JTextField copyField = new JTextField(fingerprint.length + 1);
                     copyField.setEditable(false);
                     char[] readableFingerprint = new char[fingerprint.length];
-                    for(int i = 0; i < fingerprint.length; i++)
+                    for (int i = 0; i < fingerprint.length; i++)
                         readableFingerprint[i] = (char) fingerprint[i];
                     copyField.setText(new String(readableFingerprint));
                     controlPanel.add(copyField);
                     JOptionPane.showMessageDialog(Panther.this, controlPanel,
                             "Fingerprint", JOptionPane.INFORMATION_MESSAGE);
                 }
-                catch(NoSuchAlgorithmException ex)
+                catch (NoSuchAlgorithmException ex)
                 {
                     ex.printStackTrace();
                 }
             }
         });
+
+        this.aboutMenuItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent evt)
+            {
+                Panther.this.showAbout();
+            }
+        });
+
+        this.encryptItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent evt)
+            {
+                encrypt();
+            }
+        });
+
+        this.decryptItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent evt)
+            {
+                decrypt();
+            }
+        });
     }
 
+    /**
+     * This method encrypts the text in the main text area, and saves the result to file.
+     */
+    public void encrypt()
+    {
+        /* Create the encryption thread. */
+        byte[] data = txtPlain.getText().getBytes();
+        int cipherMode = Cipher.ENCRYPT_MODE;
+        char[] password = txtPassword.getPassword();
+
+        try
+        {
+            cipherRunnable.init(data, cipherMode, password, Panther.this);
+        }
+        catch (InvalidKeyException ex)
+        {
+            ex.printStackTrace();
+            Panther.this.showError("Invalid", "The provided password has generated an invalid encryption key.");
+        }
+        catch (NoSuchAlgorithmException ex)
+        {
+            ex.printStackTrace();
+            showError("Algorithm not found!", "The encryption algorithm in use was not detected.");
+        }
+        catch (InvalidKeySpecException ex)
+        {
+            ex.printStackTrace();
+            showError("Invalid", "The generated encryption key has been reported as invalid.");
+        }
+
+        /* Create a thread from the cipherRunnable. */
+        Thread encryptionThread = new Thread(cipherRunnable);
+
+        /* Main the thread. */
+        encryptionThread.start();
+    }
+
+    /**
+     * This method decrypts the contents of a file, and displays the result in the main text area.
+     */
+    public void decrypt()
+    {
+        /* Read the file to be decrypted. */
+        File file;
+
+        /* Make sure the JFileChooser is initialized. */
+        if (Panther.this.fileChooser == null)
+            fileChooser = new JFileChooser();
+
+        /* Show the file chooser and wait for confirmation. */
+        int confirmed = fileChooser.showOpenDialog(Panther.this);
+
+        /* If the user canceled the dialog, exit the method. */
+        if (confirmed != JFileChooser.APPROVE_OPTION)
+            return;
+
+        /* Get the selected file. */
+        file = fileChooser.getSelectedFile();
+
+        /* Read the contents of the file into a byte array. */
+        FileInputStream fis = null;
+        byte[] data = new byte[(int) file.length()];
+        try
+        {
+            fis = new FileInputStream(file);
+            //noinspection ResultOfMethodCallIgnored
+            fis.read(data);
+        }
+        catch (FileNotFoundException ex)
+        {
+            ex.printStackTrace();
+            showError("File Not Found", "The specified file was not found.");
+        }
+        catch (IOException ex)
+        {
+            ex.printStackTrace();
+            showError("IO Error", "Unable to read the file.  Make sure that you have read permission.");
+        }
+        finally
+        {
+            /* Make sure the stream is closed. */
+            try
+            {
+                if (fis != null)
+                {
+                    fis.close();
+                }
+            }
+            catch (IOException ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+
+        /* Create the decryption thread. */
+        /* The CipherRunnable must be initialized correctly before it can be run as a thread. */
+        int cipherMode = Cipher.DECRYPT_MODE;
+        char[] password = txtPassword.getPassword();
+
+        try
+        {
+            cipherRunnable.init(data, cipherMode, password, Panther.this);
+        }
+        catch (InvalidKeyException ex)
+        {
+            showError("Invalid Key", "The provided password has produced an invalid decryption key.");
+        }
+        catch (NoSuchAlgorithmException ex)
+        {
+            showError("Unknown Algorithm", "The current decryption algorithm is not available.");
+        }
+        catch (InvalidKeySpecException ex)
+        {
+            showError("Invalid Key", "The generated encryption key is invalid.");
+        }
+
+        /* Create a thread from the cipherRunnable. */
+        Thread decryptionThread = new Thread(cipherRunnable);
+
+        /* Main the thread. */
+        decryptionThread.start();
+    }
+
+    /**
+     * This method shows the preferences dialog.
+     */
     public void showPreferences()
     {
         PreferencesDialog preferencesDialog = new PreferencesDialog(this);
@@ -436,6 +469,12 @@ public class Panther extends JFrame implements Updatable
         }
     }
 
+    /**
+     * This method loads the language resources from file.
+     * @param language the language to load resources from: this parameter should be the language code of that
+     * language, obtainable by Locale.getLanguage();
+     * @return  the properties object containing the resource strings.
+     */
     public static Properties loadLanguageResources(String language)
     {
         Properties properties = new Properties();
@@ -532,6 +571,28 @@ public class Panther extends JFrame implements Updatable
     }
 
     /**
+     * This method either locks or unlocks the JFrame display.
+     * @param lock whether lock or unlock the display.
+     */
+    public void setLocked(boolean lock)
+    {
+        setDisplayUnlocked(!lock);
+        btnUnlock.setEnabled(lock);
+        if (lock)
+        {
+            tmpPlaintext = txtPlain.getText();
+            txtPlain.setText("");
+            txtPassword.setText("");
+        }
+        else
+        {
+            txtPlain.setText(tmpPlaintext);
+            tmpPlaintext = null;
+        }
+
+    }
+
+    /**
      * Configures and adds the UI components to the frame.
      */
     public void initUI()
@@ -561,7 +622,7 @@ public class Panther extends JFrame implements Updatable
         }
         centerPanel.setLayout(new BorderLayout());
         centerPanel.add(pnlNorth_North, BorderLayout.NORTH);
-        centerPanel.add(spPlain, BorderLayout.SOUTH);
+        centerPanel.add(spPlain, BorderLayout.CENTER);
 
         /* ---------- Mac OS X Only ----------- */
         if (System.getProperty("os.name").equals("Mac OS X"))
@@ -647,6 +708,11 @@ public class Panther extends JFrame implements Updatable
 
     }
 
+    /**
+     *  Saves the bytes to the given file.
+     * @param data the bytes to write to file
+     * @param file the file to write to
+     */
     public void saveBytes(byte[] data, File file)
     {
         try
@@ -690,10 +756,11 @@ public class Panther extends JFrame implements Updatable
 
     /**
      * Computes the message digest, checksum, or "fingerprint" of a byte array.
+     *
      * @param data the data to be digested
      * @return the message digest as a byte array
-     * @throws NoSuchAlgorithmException  throws a no such algorithm exception when Panther.getDigestAlgorithm() returns
-     * an algorithm which is not supported or known under the current provider.
+     * @throws NoSuchAlgorithmException throws a no such algorithm exception when Panther.getDigestAlgorithm() returns
+     *                                  an algorithm which is not supported or known under the current provider.
      */
     public byte[] computeFingerprint(byte[] data) throws NoSuchAlgorithmException
     {
@@ -717,7 +784,7 @@ public class Panther extends JFrame implements Updatable
 
     public String getDigestAlgorithm()
     {
-        return digestAlgorithm;  
+        return digestAlgorithm;
     }
 
     public void showError(String title, String message)
@@ -755,14 +822,21 @@ public class Panther extends JFrame implements Updatable
      * [release number] [release month] [release year]
      * =====================================================
      * The individual release number consists of three
-     * parts:
+     * parts separated by periods:
      * 1) the major version number - For major changes that introduce
-     *      compatibility issues with older versions.
+     * compatibility issues with older versions or contain visible changes
+     * that are large enough to warrant a major version number change.
      * 2) the minor version number - For moderate to (visibly) large changes
-     *      that do not affect compatibility with older versions.
+     * that do not affect compatibility with older versions.
      * 3) the micro version number - For bug fixes or trivial changes
+     * 4) the micro release number may optionally be followed by or replaced by
+     * (in the case that it is 0) the release type 'a' for alpha, 'b' for beta.
      */
     public static String VERSION;
+
+    /**
+     * The text that represents the copyright of the program.
+     */
     public static String COPYRIGHT_TEXT;
     public static boolean verbose = false;
 }
