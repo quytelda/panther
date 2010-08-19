@@ -33,7 +33,7 @@ import java.security.spec.InvalidKeySpecException;
  * The CipherRunnable class carries out all encryption and decryption operations using information passed to it by the calling method,
  * presumably through the constructor.  The CipherRunnable class implements the runnable interface, so it can be run in it's own thread.
  *
- * @author Quytelda
+ * @author Quytelda K. Gaiwin
  * @version 1.0
  * @since 4.0
  */
@@ -81,12 +81,10 @@ public class CipherRunnable implements Runnable
         }
         catch (IllegalBlockSizeException ex)
         {
-            //TODO exception handling for IllegalBlockSizeException
             ex.printStackTrace();
         }
         catch (BadPaddingException ex)
         {
-            //TODO exception handling for BadPaddingException
             ex.printStackTrace();
         }
     }

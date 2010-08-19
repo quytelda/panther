@@ -25,8 +25,9 @@ import java.util.Scanner;
  * This class opens the requested file.
  * The file is specified in the constructor.
  *
- * @author Tamalin
- * @since 3.1.0S2 November 2008
+ * @author Quytelda K. Gaiwin
+ * @since 3.1.0
+ * @version 2.0
  */
 public class FileOpener implements Runnable
 {

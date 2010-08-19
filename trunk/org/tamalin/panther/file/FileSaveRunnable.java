@@ -24,8 +24,9 @@ import java.io.IOException;
  * This class asks the user where to save the file,
  * and saves the file when the 'Save File' button is clicked.
  *
- * @author Tamalin
- * @since 3.1.0S2
+ * @author Quytelda K. Gaiwin
+ * @since 3.1.0
+ * @version 2.0
  */
 public class FileSaveRunnable implements Runnable
 {

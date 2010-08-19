@@ -33,8 +33,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
@@ -48,7 +46,7 @@ import java.util.Properties;
  * It contains the main method, and most of the GUI code.
  *
  * @author Quytelda K. Gaiwin
- * @version 4.0 August 7 2010
+ * @version 4.0
  * @since 1.0
  */
 public class Panther extends JFrame implements Updatable
@@ -111,31 +109,31 @@ public class Panther extends JFrame implements Updatable
         /* Get the text for the about dialog. */
         aboutString = (String) properties.get("aboutBoxText");
 
-        /* The constructors section. */
-        /* Initialize the JPanels first. */
+        /* -------------------------------------------+
+         *               Constructors
+         * -------------------------------------------+*/
         centerPanel = new JPanel();
         pnlNorth_North = new JPanel();
         tools = new JToolBar(JToolBar.HORIZONTAL);
 
-        /* Next handle the text components. */
+        /* Handle the text components. */
         txtPlain = new JTextArea(20, 55);
         txtPassword = new JPasswordField(20);
 
         /* Then the JButtons and JLabels. */
+        Charset set = Charset.forName("UTF-8");
         btnEncrypt = new JButton((String) properties.get("encryptButtonLabel"));
         btnDecrypt = new JButton((String) properties.get("decryptButtonLabel"));
         btnLock = new JButton((String) properties.get("lockButtonLabel"));
         btnUnlock = new JButton((String) properties.get("unlockButtonLabel"));
-        Charset set = Charset.forName("UTF-8");
-        ByteBuffer buffer = set.encode((String) properties.get("passwordLabelText"));
-        /* Fix any encoding issues in the password text label. */
-        buffer.array();
-        CharBuffer text = set.decode(buffer);
-        lblPassword = new JLabel(text.toString());
+        byte[] passwordLabelText = ((String) properties.get("password_label_text")).getBytes();
+        lblPassword = new JLabel(new String(passwordLabelText, set) + ":");
         btnAbout = new JButton((String) properties.get("aboutButtonLabel"));
         btnHide = new JButton((String) properties.get("hideButtonLabel"));
         btnSave = new JButton((String) properties.get("saveButtonLabel"));
         btnOpen = new JButton((String) properties.get("openButtonLabel"));
+
+        /* Construct the JScrollPane in the main window with no insets. */
         spPlain = new JScrollPane(txtPlain)
         {
             public Insets getInsets()
@@ -167,7 +165,7 @@ public class Panther extends JFrame implements Updatable
 
 
         /* Find the current version number. */
-        VERSION = (String) properties.get("versionNumber");
+        VERSION = (String) properties.get("version_id");
         COPYRIGHT_TEXT = (String) properties.get("copyright_text");
 
 
@@ -292,10 +290,25 @@ public class Panther extends JFrame implements Updatable
                     controlPanel.add(new JLabel(getDigestAlgorithm() + " Fingerprint:"));
                     JTextField copyField = new JTextField(fingerprint.length + 1);
                     copyField.setEditable(false);
-                    char[] readableFingerprint = new char[fingerprint.length];
-                    for (int i = 0; i < fingerprint.length; i++)
-                        readableFingerprint[i] = (char) fingerprint[i];
-                    copyField.setText(new String(readableFingerprint));
+
+                    /* Convert the fingerprint to Hex code. */
+                    StringBuilder hexBuilder = new StringBuilder();
+                    for (int i = 0; i < fingerprint.length; i += 2)
+                    {
+                        String hexComponents = Integer.toHexString(fingerprint[i] & 0xFF).toUpperCase();
+
+                        if(hexComponents.length() == 1)
+                            hexComponents = "0".concat(hexComponents);
+                        
+                        hexBuilder.append(hexComponents);
+                        if (i != fingerprint.length - 2)
+                        {
+                            hexBuilder.append(":");
+                        }
+                    }
+
+                    /* Display the dialog. */
+                    copyField.setText(hexBuilder.toString());
                     controlPanel.add(copyField);
                     JOptionPane.showMessageDialog(Panther.this, controlPanel,
                             "Fingerprint", JOptionPane.INFORMATION_MESSAGE);
@@ -471,9 +484,10 @@ public class Panther extends JFrame implements Updatable
 
     /**
      * This method loads the language resources from file.
+     *
      * @param language the language to load resources from: this parameter should be the language code of that
-     * language, obtainable by Locale.getLanguage();
-     * @return  the properties object containing the resource strings.
+     *                 language, obtainable by Locale.getLanguage();
+     * @return the properties object containing the resource strings.
      */
     public static Properties loadLanguageResources(String language)
     {
@@ -572,6 +586,7 @@ public class Panther extends JFrame implements Updatable
 
     /**
      * This method either locks or unlocks the JFrame display.
+     *
      * @param lock whether lock or unlock the display.
      */
     public void setLocked(boolean lock)
@@ -709,7 +724,8 @@ public class Panther extends JFrame implements Updatable
     }
 
     /**
-     *  Saves the bytes to the given file.
+     * Saves the bytes to the given file.
+     *
      * @param data the bytes to write to file
      * @param file the file to write to
      */

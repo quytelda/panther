@@ -82,14 +82,14 @@ public class MacAppHandler implements ApplicationListener
 
     public void handleQuit(ApplicationEvent applicationEvent)
     {
-        //TODO: implement exit functionality
-        System.out.println("Exiting...");
+        c.dispose();
         applicationEvent.setHandled(true);
+        System.exit(0);
     }
 
     public void handleReOpenApplication(ApplicationEvent applicationEvent)
     {
-        //TODO: reimplement functionality.
+        /* Nothing needs to be done here. */
     }
 
     private Panther c;
