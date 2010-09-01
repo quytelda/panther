@@ -66,7 +66,8 @@ public class Panther extends JFrame implements Updatable
 
         /*
          * If this is a Mac OS X system, use reflection to load the MacAppHandler class, which
-         * handles all the Apple events that may be thrown at the program.
+         * handles all the Apple events that may be thrown at the program from the Mac OS X
+         * platform.
          */
         if (System.getProperty("os.name").equals("Mac OS X"))
         {
@@ -101,7 +102,7 @@ public class Panther extends JFrame implements Updatable
 
         Properties properties = loadLanguageResources(locale.getLanguage());
 
-        /* Deal with the properties. */
+        /* Set default properties. */
         this.setDigestAlgorithm("SHA-1");
 
         /* Initialize the GUI in whatever language is selected. */
@@ -209,6 +210,7 @@ public class Panther extends JFrame implements Updatable
                 saveBytes(txtPlain.getText().getBytes(), file);
             }
         });
+        
         btnHide.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent evt)
@@ -288,7 +290,7 @@ public class Panther extends JFrame implements Updatable
                     /* Construct a dialog to display the digest. */
                     JPanel controlPanel = new JPanel();
                     controlPanel.add(new JLabel(getDigestAlgorithm() + " Fingerprint:"));
-                    JTextField copyField = new JTextField(fingerprint.length + 1);
+                    JTextField copyField = new JTextField();
                     copyField.setEditable(false);
 
                     /* Convert the fingerprint to Hex code. */
@@ -308,6 +310,7 @@ public class Panther extends JFrame implements Updatable
                     }
 
                     /* Display the dialog. */
+                    copyField.setColumns(hexBuilder.toString().toCharArray().length + 2);
                     copyField.setText(hexBuilder.toString());
                     controlPanel.add(copyField);
                     JOptionPane.showMessageDialog(Panther.this, controlPanel,

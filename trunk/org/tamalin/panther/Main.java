@@ -27,7 +27,7 @@ import java.util.Locale;
  * Time: 10:51:47 PM
  *
  * @author Quytelda K. Gaiwin
- * @version 1.0
+ * @version 1.1
  * @since 4.0
  */
 
@@ -74,7 +74,14 @@ public class Main
                 Panther m = new Panther(Locale.getDefault());
                 m.pack();
                 m.setVisible(true);
-                m.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                if(System.getProperty("os.name").equals("Mac OS X"))
+                {
+                    m.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+                }
+                else
+                {
+                    m.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                }
             }
         });
 

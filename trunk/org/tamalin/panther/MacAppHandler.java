@@ -29,7 +29,7 @@ import java.awt.*;
  * Date: Aug 6, 2010
  * Time: 6:38:24 PM
  * @author Quytelda K. Gaiwin
- * @version 1.0
+ * @version 1.1
  * @since 4.0
  */
 
@@ -89,7 +89,9 @@ public class MacAppHandler implements ApplicationListener
 
     public void handleReOpenApplication(ApplicationEvent applicationEvent)
     {
-        /* Nothing needs to be done here. */
+        /* Reshow the application if it is hidden. */
+        if(!c.isVisible())
+            c.setVisible(true);
     }
 
     private Panther c;
