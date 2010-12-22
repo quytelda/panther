@@ -21,6 +21,8 @@ import com.apple.eawt.ApplicationEvent;
 import com.apple.eawt.ApplicationListener;
 
 import java.awt.*;
+import java.io.IOException;
+import java.util.logging.Level;
 
 /**
  * This class is loaded on the Macintosh platform to help with integration.
@@ -82,6 +84,14 @@ public class MacAppHandler implements ApplicationListener
 
     public void handleQuit(ApplicationEvent applicationEvent)
     {
+        try
+        {
+            c.cleanUp();
+        }
+        catch(IOException ex)
+        {
+            Panther.getLogger().log(Level.WARNING, "Unable to save preferences file.", ex);
+        }
         c.dispose();
         applicationEvent.setHandled(true);
         System.exit(0);

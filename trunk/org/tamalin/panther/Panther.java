@@ -13,7 +13,6 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-
 package org.tamalin.panther;
 
 import org.tamalin.panther.crypt.CipherRunnable;
@@ -28,18 +27,20 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.ResourceBundle;
+import java.util.logging.*;
 
 /**
  * This class is the main class of the Panther program.
@@ -51,127 +52,81 @@ import java.util.Properties;
  */
 public class Panther extends JFrame implements Updatable
 {
-
     /**
      * Creates the main window of the application, and loads all the related properties.
      *
      * @param locale The locale for which the GUI should be configured.
      */
-    public Panther(Locale locale)
+    public Panther()
     {
+        logger.addHandler(new StreamHandler(System.out, new SimpleFormatter()));
+        /*#############*
+         * Frame Icon  *
+         *#############*/
         Toolkit tk = Toolkit.getDefaultToolkit();
         URL logoURL = Panther.class.getResource("/org/tamalin/panther/resources/icon_128.png");
         Image img = tk.getImage(logoURL);
         this.setIconImage(img);
 
-        /*
+        /* ------------------ Mac OS X Only -------------------
          * If this is a Mac OS X system, use reflection to load the MacAppHandler class, which
          * handles all the Apple events that may be thrown at the program from the Mac OS X
          * platform.
          */
         if (System.getProperty("os.name").equals("Mac OS X"))
         {
-            try
-            {
-                Class<?> appClass = Class.forName("org.tamalin.panther.MacAppHandler");
-                Object app = appClass.newInstance();
-                Method initializer = appClass.getMethod("init", Panther.class, Image.class);
-                initializer.invoke(app, this, img);
-            }
-            catch (ClassNotFoundException ex)
-            {
-                ex.printStackTrace();
-            }
-            catch (NoSuchMethodException e)
-            {
-                e.printStackTrace();
-            }
-            catch (InvocationTargetException e)
-            {
-                e.printStackTrace();
-            }
-            catch (InstantiationException e)
-            {
-                e.printStackTrace();
-            }
-            catch (IllegalAccessException e)
-            {
-                e.printStackTrace();
-            }
+            this.OSXConfig();
         }
 
-        Properties properties = loadLanguageResources(locale.getLanguage());
+        /*######################################
+         *#  Instantiate Interface Components  #
+         *######################################*/
+        initComponents();
 
-        /* Set default properties. */
-        this.setDigestAlgorithm("SHA-1");
+        /*######################################
+         *#  Lay out the interface components  #
+         *######################################*/
+        this.doLayoutUI();
 
-        /* Initialize the GUI in whatever language is selected. */
+        /*########################
+         * Load Saved Properties *
+         *#######################*/
+        Properties properties = new Properties();
+        String home = System.getProperty("user.home");
+        String path = null;
+        if(System.getProperty("os.name").equals("Mac OS X"))
+            path = home + "/Library/Preferences/org.tamalin.panther";
+        else
+            path = home + "./panthersleek";
 
-        /* Get the text for the about dialog. */
-        aboutString = (String) properties.get("aboutBoxText");
+        File f = new File(path);
 
-        /* -------------------------------------------+
-         *               Constructors
-         * -------------------------------------------+*/
-        centerPanel = new JPanel();
-        pnlNorth_North = new JPanel();
-        tools = new JToolBar(JToolBar.HORIZONTAL);
-
-        /* Handle the text components. */
-        txtPlain = new JTextArea(20, 55);
-        txtPassword = new JPasswordField(20);
-
-        /* Then the JButtons and JLabels. */
-        Charset set = Charset.forName("UTF-8");
-        btnEncrypt = new JButton((String) properties.get("encryptButtonLabel"));
-        btnDecrypt = new JButton((String) properties.get("decryptButtonLabel"));
-        btnLock = new JButton((String) properties.get("lockButtonLabel"));
-        btnUnlock = new JButton((String) properties.get("unlockButtonLabel"));
-        byte[] passwordLabelText = ((String) properties.get("password_label_text")).getBytes();
-        lblPassword = new JLabel(new String(passwordLabelText, set) + ":");
-        btnAbout = new JButton((String) properties.get("aboutButtonLabel"));
-        btnHide = new JButton((String) properties.get("hideButtonLabel"));
-        btnSave = new JButton((String) properties.get("saveButtonLabel"));
-        btnOpen = new JButton((String) properties.get("openButtonLabel"));
-
-        /* Construct the JScrollPane in the main window with no insets. */
-        spPlain = new JScrollPane(txtPlain)
+        if(!f.exists())
         {
-            public Insets getInsets()
+            initialize(f);
+            digestAlgorithm = "SHA-1";
+            this.pack();
+        }
+        else
+        {
+            try
             {
-                return new Insets(0, 0, 0, 0);
+                properties.load(new FileInputStream(f));
             }
-        };
+            catch(IOException ex)
+            {
+                logger.log(Level.WARNING, "Properties file was unreadable.", ex);
+            }
 
-        mb = new JMenuBar();
+            digestAlgorithm = properties.getProperty("digest_algorithm");
+            int width = Integer.parseInt(properties.getProperty("width"));
+            int height = Integer.parseInt(properties.getProperty("height"));
+            int x = Integer.parseInt(properties.getProperty("x"));
+            int y = Integer.parseInt(properties.getProperty("y"));
+            this.setSize(width, height);
+            this.setLocation(x, y);
+        }
 
-        /* Initialize the JMenus. */
-        fileMenu = new JMenu("File");
-        editMenu = new JMenu("Edit");
-        privacyMenu = new JMenu("Privacy");
-        operationMenu = new JMenu("Operations");
-        helpMenu = new JMenu("Help");
-
-        /* Now initialize the JMenuItems. */
-        openFileItem = new JMenuItem((String) properties.get("openButtonLabel"));
-        saveFileItem = new JMenuItem((String) properties.get("saveButtonLabel"));
-        editPreferencesItem = new JMenuItem("Preferences...");
-        fingerprintItem = new JMenuItem("Compute Fingerprint");
-        encryptItem = new JMenuItem((String) properties.get("encryptButtonLabel"));
-        decryptItem = new JMenuItem((String) properties.get("decryptButtonLabel"));
-        lockItem = new JMenuItem((String) properties.get("lockButtonLabel"));
-        unlockItem = new JMenuItem((String) properties.get("unlockButtonLabel"));
-        hideItem = new JMenuItem("Hide");
-        aboutMenuItem = new JMenuItem("About");
-
-
-        /* Find the current version number. */
-        VERSION = (String) properties.get("version_id");
-        COPYRIGHT_TEXT = (String) properties.get("copyright_text");
-
-
-        /* Put together the user interface. */
-        initUI();
 
         /* Try to instantiate a CipherRunnable with the AES algorithm. */
         try
@@ -180,38 +135,45 @@ public class Panther extends JFrame implements Updatable
         }
         catch (NoSuchAlgorithmException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE, "Algorithm Not Found", ex);
         }
         catch (NoSuchPaddingException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE, "Padding Error", ex);
         }
 
 
-        btnSave.addActionListener(new ActionListener()
+        /*####################
+         *#  Event Handlers  #
+         *####################*/
+        save.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent evt)
             {
                 /* Make sure the JFileChooser is initialized. */
                 if (fileChooser == null)
+                {
                     fileChooser = new JFileChooser();
+                }
 
                 /* Open the JFileChooser, and wait for confirmation. */
                 int confirmed = fileChooser.showSaveDialog(Panther.this);
 
                 /* If the dialog was canceled, exit the method. */
                 if (confirmed != JFileChooser.APPROVE_OPTION)
+                {
                     return;
+                }
 
                 /* Get the chosen file. */
                 File file = fileChooser.getSelectedFile();
 
                 /* Save the data to file. */
-                saveBytes(txtPlain.getText().getBytes(), file);
+                saveBytes(plaintext.getText().getBytes(), file);
             }
         });
-        
-        btnHide.addActionListener(new ActionListener()
+
+        hide.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent evt)
             {
@@ -220,33 +182,31 @@ public class Panther extends JFrame implements Updatable
             }
         });
 
-        btnLock.addActionListener(new ActionListener()
+        lock.addActionListener(new ActionListener()
         {
-
             public void actionPerformed(ActionEvent evt)
             {
                 setLocked(true);
             }
         });
 
-        btnUnlock.addActionListener(new ActionListener()
+        unlock.addActionListener(new ActionListener()
         {
-
             public void actionPerformed(ActionEvent evt)
             {
                 setLocked(false);
             }
         });
 
-        btnEncrypt.addActionListener(new ActionListener()  //Handle clicks to btnEncrypt.
+        encrypt.addActionListener(new ActionListener()  //Handle clicks to encrypt.
         {
-            public void actionPerformed(ActionEvent ae)
+            public void actionPerformed(ActionEvent e)
             {
                 encrypt();
             }
         });
 
-        btnDecrypt.addActionListener(new ActionListener() //Handle clicks on btnDecrypt.
+        decrypt.addActionListener(new ActionListener() //Handle clicks on decrypt.
         {
             public void actionPerformed(ActionEvent e)
             {
@@ -256,7 +216,7 @@ public class Panther extends JFrame implements Updatable
 
         editPreferencesItem.addActionListener(new ActionListener()
         {
-            public void actionPerformed(ActionEvent evt)
+            public void actionPerformed(ActionEvent e)
             {
                 showPreferences();
             }
@@ -285,7 +245,7 @@ public class Panther extends JFrame implements Updatable
                 byte[] fingerprint;
                 try
                 {
-                    fingerprint = computeFingerprint(txtPlain.getText().getBytes());
+                    fingerprint = computeFingerprint(plaintext.getText().getBytes());
 
                     /* Construct a dialog to display the digest. */
                     JPanel controlPanel = new JPanel();
@@ -299,9 +259,11 @@ public class Panther extends JFrame implements Updatable
                     {
                         String hexComponents = Integer.toHexString(fingerprint[i] & 0xFF).toUpperCase();
 
-                        if(hexComponents.length() == 1)
+                        if (hexComponents.length() == 1)
+                        {
                             hexComponents = "0".concat(hexComponents);
-                        
+                        }
+
                         hexBuilder.append(hexComponents);
                         if (i != fingerprint.length - 2)
                         {
@@ -354,9 +316,9 @@ public class Panther extends JFrame implements Updatable
     public void encrypt()
     {
         /* Create the encryption thread. */
-        byte[] data = txtPlain.getText().getBytes();
+        byte[] data = plaintext.getText().getBytes();
         int cipherMode = Cipher.ENCRYPT_MODE;
-        char[] password = txtPassword.getPassword();
+        char[] password = this.password.getPassword();
 
         try
         {
@@ -364,17 +326,17 @@ public class Panther extends JFrame implements Updatable
         }
         catch (InvalidKeyException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE, "Invalid Key Generated", ex);
             Panther.this.showError("Invalid", "The provided password has generated an invalid encryption key.");
         }
         catch (NoSuchAlgorithmException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE, "Invalid Algorithm", ex);
             showError("Algorithm not found!", "The encryption algorithm in use was not detected.");
         }
         catch (InvalidKeySpecException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.SEVERE, "Invalid Key Specification", ex);
             showError("Invalid", "The generated encryption key has been reported as invalid.");
         }
 
@@ -383,6 +345,79 @@ public class Panther extends JFrame implements Updatable
 
         /* Main the thread. */
         encryptionThread.start();
+    }
+
+    private void initComponents()
+    {
+        logger.log(Level.FINE, "Initializing interface components.");
+        ResourceBundle bundle = ResourceBundle.getBundle(BUNDLE_PATH, Locale.getDefault());
+        centerPanel = new JPanel();
+        north = new JPanel();
+        tools = new JToolBar(JToolBar.HORIZONTAL);
+
+        /* Handle the text components. */
+        plaintext = new JTextArea(20, 55);
+        plaintext.setLineWrap(true);
+        password = new JPasswordField(20);
+
+        /* Then the JButtons and JLabels. */
+        encrypt = new JButton(bundle.getString("encrypt"));
+        decrypt = new JButton(bundle.getString("decrypt"));
+        lock = new JButton(bundle.getString("lock"));
+        unlock = new JButton(bundle.getString("unlock"));
+        passwordLabel = new JLabel(bundle.getString("password"));
+        about = new JButton(bundle.getString("about"));
+        hide = new JButton(bundle.getString("hide"));
+        save = new JButton(bundle.getString("save"));
+        open = new JButton(bundle.getString("open"));
+
+        /* Construct the JScrollPane in the main window with no insets. */
+        plaintextPane = new JScrollPane(plaintext)
+        {
+
+            @Override
+            public Insets getInsets()
+            {
+                return new Insets(0, 0, 0, 0);
+            }
+        };
+
+        mb = new JMenuBar();
+
+        /* Initialize the JMenus. */
+        fileMenu = new JMenu(bundle.getString("menu.file"));
+        editMenu = new JMenu(bundle.getString("menu.edit"));
+        privacyMenu = new JMenu(bundle.getString("menu.privacy"));
+        operationMenu = new JMenu(bundle.getString("menu.operations"));
+        helpMenu = new JMenu(bundle.getString("menu.help"));
+
+        /* Now initialize the JMenuItems. */
+        openFileItem = new JMenuItem(bundle.getString("menu.file.open"));
+        saveFileItem = new JMenuItem(bundle.getString("menu.file.save"));
+        editPreferencesItem = new JMenuItem(bundle.getString("menu.edit.preferences"));
+        fingerprintItem = new JMenuItem(bundle.getString("menu.privacy.fingerprint"));
+        encryptItem = new JMenuItem(bundle.getString("menu.privacy.encrypt"));
+        decryptItem = new JMenuItem(bundle.getString("menu.privacy.decrypt"));
+        lockItem = new JMenuItem(bundle.getString("menu.operations.lock"));
+        unlockItem = new JMenuItem(bundle.getString("menu.operations.unlock"));
+        hideItem = new JMenuItem(bundle.getString("menu.operations.hide"));
+        aboutMenuItem = new JMenuItem(bundle.getString("menu.help.about"));
+    }
+
+    private void initialize(File file)
+    {
+        if(!file.exists())
+        {
+            try
+            {
+                boolean created = file.createNewFile();
+                if(!created) throw new IOException();
+            }
+            catch(IOException ex)
+            {
+                logger.log(Level.WARNING, "Unable to write preferences file.", ex);
+            }
+        }
     }
 
     /**
@@ -395,14 +430,18 @@ public class Panther extends JFrame implements Updatable
 
         /* Make sure the JFileChooser is initialized. */
         if (Panther.this.fileChooser == null)
+        {
             fileChooser = new JFileChooser();
+        }
 
         /* Show the file chooser and wait for confirmation. */
         int confirmed = fileChooser.showOpenDialog(Panther.this);
 
         /* If the user canceled the dialog, exit the method. */
         if (confirmed != JFileChooser.APPROVE_OPTION)
+        {
             return;
+        }
 
         /* Get the selected file. */
         file = fileChooser.getSelectedFile();
@@ -418,12 +457,12 @@ public class Panther extends JFrame implements Updatable
         }
         catch (FileNotFoundException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.INFO, "File Not Found", ex);
             showError("File Not Found", "The specified file was not found.");
         }
         catch (IOException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.WARNING, "Input/Output Error", ex);
             showError("IO Error", "Unable to read the file.  Make sure that you have read permission.");
         }
         finally
@@ -445,7 +484,7 @@ public class Panther extends JFrame implements Updatable
         /* Create the decryption thread. */
         /* The CipherRunnable must be initialized correctly before it can be run as a thread. */
         int cipherMode = Cipher.DECRYPT_MODE;
-        char[] password = txtPassword.getPassword();
+        char[] password = this.password.getPassword();
 
         try
         {
@@ -504,41 +543,34 @@ public class Panther extends JFrame implements Updatable
             /* If it is not one of these, display an error message. */
             if ((!language.equals("en")) && (!language.equals("sp")) && (!language.equals("it")))
             {
+                String log = "Language Code " + language + " Unsupported";
+                logger.log(Level.WARNING, log);
                 JOptionPane.showMessageDialog(null, "Language code \"" + language + "\" is not supported.", "Unsupported Language", JOptionPane.ERROR_MESSAGE);
                 System.exit(0);
             }
 
             /*
-                          * Load the labels for the correct locale.
-                          * The multilingual language packets are located inside the .jar file in
-                          * /org/tamalin/panther/resources/.  Each file which contains a series of
-                          * keys and values is identified as so: labels_[language code].properties:
-                          * For example, the English package is 'labels_en.properties'.
-                          */
+             * Load the labels for the correct locale.
+             * The multilingual language packets are located inside the .jar file in
+             * /org/tamalin/panther/resources/.  Each file which contains a series of
+             * keys and values is identified as so: labels_[language code].properties:
+             * For example, the English package is 'labels_en.properties'.
+             */
             URL url = Panther.class.getResource("/org/tamalin/panther/resources/labels_" + language + ".properties");
             URLConnection uc = url.openConnection();
             properties.load(uc.getInputStream());
         }
         catch (FileNotFoundException ex) //File was not found
         {
-            JOptionPane.showMessageDialog(null, "Language packet not found.");
+            logger.log(Level.WARNING, "Resource File Not Found", ex);
         }
-        catch (IOException ioe) //Problem reading from the file
+        catch (IOException ex) //Problem reading from the file
         {
+            logger.log(Level.WARNING, "Input/Output Error to Resource Bundle", ex);
             JOptionPane.showMessageDialog(null, "Error reading language packet.");
         }
 
         return properties;
-    }
-
-    /**
-     * Shortcut method for <code>System.out.println()</code>.  This method will soon be changed to use the Logger class.
-     *
-     * @param s = argument for println() method.
-     */
-    private void output(String s)
-    {
-        System.out.println(s);
     }
 
     /**
@@ -549,13 +581,13 @@ public class Panther extends JFrame implements Updatable
      */
     public void setDisplayUnlocked(boolean unlocked)
     {
-        btnEncrypt.setEnabled(unlocked);
-        btnDecrypt.setEnabled(unlocked);
-        txtPlain.setEditable(unlocked);
-        btnLock.setEnabled(unlocked);
-        txtPassword.setEditable(unlocked);
-        btnSave.setEnabled(unlocked);
-        btnOpen.setEnabled(unlocked);
+        encrypt.setEnabled(unlocked);
+        decrypt.setEnabled(unlocked);
+        plaintext.setEditable(unlocked);
+        lock.setEnabled(unlocked);
+        password.setEditable(unlocked);
+        save.setEnabled(unlocked);
+        open.setEnabled(unlocked);
     }
 
     /**
@@ -568,20 +600,13 @@ public class Panther extends JFrame implements Updatable
     {
         if (!hidden)
         {
-            if (verbose)
-            {
-                output("Hiding");
-                output("Setting size to {0, 0}");
-            }
+            logger.log(Level.INFO, "Setting frame size to {0, 0}.");
             setSize(0, 0);
             hidden = true;
         }
         else
         {
-            if (verbose)
-            {
-                output("Revealing Window...");
-            }
+            logger.log(Level.INFO, "Packing frame.");
             pack();
             hidden = false;
         }
@@ -595,97 +620,102 @@ public class Panther extends JFrame implements Updatable
     public void setLocked(boolean lock)
     {
         setDisplayUnlocked(!lock);
-        btnUnlock.setEnabled(lock);
+        unlock.setEnabled(lock);
         if (lock)
         {
-            tmpPlaintext = txtPlain.getText();
-            txtPlain.setText("");
-            txtPassword.setText("");
+            tmpPlaintext = plaintext.getText();
+            plaintext.setText("");
+            password.setText("");
         }
         else
         {
-            txtPlain.setText(tmpPlaintext);
+            plaintext.setText(tmpPlaintext);
             tmpPlaintext = null;
         }
 
     }
 
+    private File getPreferencesFile()
+    {
+        String home = System.getProperty("user.home");
+        String path = null;
+        if(System.getProperty("os.name").equals("Mac OS X"))
+            path = home + "/Library/Preferences/org.tamalin.panther";
+        else
+            path = home + "./panthersleek";
+
+        return new File(path);
+    }
+
+    public static Logger getLogger()
+    {
+        return logger;
+    }
+
     /**
      * Configures and adds the UI components to the frame.
      */
-    public void initUI()
+    private void doLayoutUI()
     {
         //Set the UI layout and the frame title.
-        if (verbose)
-        {
-            output("Laying out UI.");
-        }
+        logger.log(Level.FINE, "Layout out the user interface.");
         setLayout(new BorderLayout());
         setTitle("Panther");
 
         //Adds all the containers to the Panther Frame.
-        if (verbose)
-        {
-            output("Adding UI component main panels.");
-        }
         tools.setFloatable(false);
         this.add(tools, BorderLayout.NORTH);
         this.add(centerPanel, BorderLayout.CENTER);
 
+        
 
         //Lay out the UI Components the components in the container.
-        if (verbose)
-        {
-            output("Laying out UI panels.");
-        }
         centerPanel.setLayout(new BorderLayout());
-        centerPanel.add(pnlNorth_North, BorderLayout.NORTH);
-        centerPanel.add(spPlain, BorderLayout.CENTER);
+        centerPanel.add(north, BorderLayout.NORTH);
+        centerPanel.add(plaintextPane, BorderLayout.CENTER);
+
+        plaintextPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 
         /* ---------- Mac OS X Only ----------- */
+        /* Lays out the toolbar properly using the OS X segmented capsule button style. */
         if (System.getProperty("os.name").equals("Mac OS X"))
         {
-            String style = "segmentedCapsule";
-            btnEncrypt.putClientProperty("JButton.buttonType", style);
-            btnEncrypt.putClientProperty("JButton.segmentPosition", "first");
-            btnDecrypt.putClientProperty("JButton.buttonType", style);
-            btnDecrypt.putClientProperty("JButton.segmentPosition", "last");
-            btnLock.putClientProperty("JButton.buttonType", style);
-            btnLock.putClientProperty("JButton.segmentPosition", "first");
-            btnUnlock.putClientProperty("JButton.buttonType", style);
-            btnUnlock.putClientProperty("JButton.segmentPosition", "last");
-            btnHide.putClientProperty("JButton.buttonType", style);
-            btnHide.putClientProperty("JButton.segmentPosition", "only");
-            btnSave.putClientProperty("JButton.buttonType", style);
-            btnSave.putClientProperty("JButton.segmentPosition", "first");
-            btnOpen.putClientProperty("JButton.buttonType", style);
-            btnOpen.putClientProperty("JButton.segmentPosition", "last");
+            String style = "segmentedTextured";
+            encrypt.putClientProperty("JButton.buttonType", style);
+            encrypt.putClientProperty("JButton.segmentPosition", "first");
+            decrypt.putClientProperty("JButton.buttonType", style);
+            decrypt.putClientProperty("JButton.segmentPosition", "last");
+            lock.putClientProperty("JButton.buttonType", style);
+            lock.putClientProperty("JButton.segmentPosition", "first");
+            unlock.putClientProperty("JButton.buttonType", style);
+            unlock.putClientProperty("JButton.segmentPosition", "last");
+            hide.putClientProperty("JButton.buttonType", style);
+            hide.putClientProperty("JButton.segmentPosition", "only");
+            save.putClientProperty("JButton.buttonType", style);
+            save.putClientProperty("JButton.segmentPosition", "first");
+            open.putClientProperty("JButton.buttonType", style);
+            open.putClientProperty("JButton.segmentPosition", "last");
         }
 
-
-        //Add all the UI components to the frame.
-        //Several of the components are contained inside other
-        //panels that will be added to the frame.
-        if (verbose)
-        {
-            output("Adding UI components");
-        }
-        tools.add(btnEncrypt);
-        tools.add(btnDecrypt);
-        tools.add(btnLock);
-        tools.add(btnUnlock);
-        tools.add(btnHide);
-        tools.add(btnSave);
-        tools.add(btnOpen);
-        pnlNorth_North.add(lblPassword);
-        pnlNorth_North.add(txtPassword);
-        spPlain.setBorder(null);
+        logger.log(Level.FINER, "Adding components to frame.");
+        tools.add(encrypt);
+        tools.add(decrypt);
+        tools.add(lock);
+        tools.add(unlock);
+        tools.add(hide);
+        tools.add(save);
+        tools.add(open);
+        north.add(passwordLabel);
+        north.add(password);
+        plaintextPane.setBorder(null);
 
 
         Component[] components = tools.getComponents();
 
         for (Component c : components)
+        {
             c.setFocusable(false);
+        }
 
         mb.add(fileMenu);
         mb.add(editMenu);
@@ -710,20 +740,47 @@ public class Panther extends JFrame implements Updatable
         /* Set the button mnemonics.  Each mnemonic character should be the first character in the
          * button's text, unless it has some diacritic marker over it.
          */
-        if (verbose)
-        {
-            output("Configuring UI components...");
-        }
-        btnUnlock.setEnabled(false);
-        btnUnlock.setMnemonic(btnUnlock.getText().charAt(1));
-        btnLock.setMnemonic(btnLock.getText().charAt(0));
-        btnHide.setMnemonic(btnHide.getText().charAt(0));
-        btnEncrypt.setMnemonic(btnEncrypt.getText().charAt(0));
-        btnDecrypt.setMnemonic(btnDecrypt.getText().charAt(0));
-        btnAbout.setMnemonic(btnAbout.getText().charAt(0));
-        btnSave.setMnemonic(btnSave.getText().charAt(0));
-        btnOpen.setMnemonic(btnOpen.getText().charAt(0));
+        logger.log(Level.FINER, "Configuring interface element behavior.");
+        unlock.setEnabled(false);
+        unlock.setMnemonic(unlock.getText().charAt(1));
+        lock.setMnemonic(lock.getText().charAt(0));
+        hide.setMnemonic(hide.getText().charAt(0));
+        encrypt.setMnemonic(encrypt.getText().charAt(0));
+        decrypt.setMnemonic(decrypt.getText().charAt(0));
+        about.setMnemonic(about.getText().charAt(0));
+        save.setMnemonic(save.getText().charAt(0));
+        open.setMnemonic(open.getText().charAt(0));
+    }
 
+    private void OSXConfig()
+    {
+        try
+        {
+            Class<?> appClass = Class.forName("org.tamalin.panther.MacAppHandler");
+            Object app = appClass.newInstance();
+            Method initializer = appClass.getMethod("init", Panther.class, Image.class);
+            initializer.invoke(app, this, this.getIconImage());
+        }
+        catch (ClassNotFoundException ex)
+        {
+            ex.printStackTrace();
+        }
+        catch (NoSuchMethodException e)
+        {
+            e.printStackTrace();
+        }
+        catch (InvocationTargetException e)
+        {
+            e.printStackTrace();
+        }
+        catch (InstantiationException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IllegalAccessException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -750,20 +807,24 @@ public class Panther extends JFrame implements Updatable
     {
         if (cipherRunnable.getMode() == Cipher.DECRYPT_MODE)
         {
-            txtPlain.setText(new String(data));
+            plaintext.setText(new String(data));
         }
         else
         {
             /* Make sure the JFileChooser is initialized. */
             if (fileChooser == null)
+            {
                 fileChooser = new JFileChooser();
+            }
 
             /* Open the JFileChooser, and wait for confirmation. */
             int confirmed = fileChooser.showSaveDialog(this);
 
             /* If the file dialog was canceled, exit the method. */
             if (confirmed != JFileChooser.APPROVE_OPTION)
+            {
                 return;
+            }
 
             /* Get the chosen file. */
             File file = fileChooser.getSelectedFile();
@@ -789,11 +850,8 @@ public class Panther extends JFrame implements Updatable
 
     public void showAbout()
     {
-        StringBuilder message = new StringBuilder(aboutString);
-        message.append(VERSION);
-        message.append(System.getProperty("line.separator"));
-        message.append(COPYRIGHT_TEXT);
-        JOptionPane.showMessageDialog(Panther.this, message.toString(), btnAbout.getText(), JOptionPane.INFORMATION_MESSAGE);
+        String info = "<html><center><b>Panther " + VERSION + "</b><br /><small>© 2010-2011 Tamalin<br />Under the Apache 2.0 License</small></center></html>";
+        JOptionPane.showMessageDialog(Panther.this, info, about.getText(), JOptionPane.INFORMATION_MESSAGE);
     }
 
     public void setDigestAlgorithm(String alg)
@@ -811,19 +869,33 @@ public class Panther extends JFrame implements Updatable
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
     }
 
+    public void cleanUp() throws IOException
+    {
+        /*##################
+         * Save Properties *
+         *#################*/
+        Properties properties = new Properties();
+        File file = this.getPreferencesFile();
+        properties.setProperty("height", "" + this.getHeight());
+        properties.setProperty("width", "" + this.getWidth());
+        properties.setProperty("x", "" + this.getX());
+        properties.setProperty("y", "" + this.getY());
+        properties.setProperty("digest_algorithm", this.getDigestAlgorithm());
+        properties.store(new FileOutputStream(file), "Do not modify this file by hand!");
+    }
+    
     private JPanel centerPanel;
-    private JPanel pnlNorth_North;
+    private JPanel north;
     private JToolBar tools;
-    private static JTextArea txtPlain;
-    private JButton btnEncrypt, btnDecrypt, btnLock, btnUnlock, btnHide, btnSave, btnOpen;
-    private static JPasswordField txtPassword;
-    private JLabel lblPassword;
-    private JButton btnAbout;
+    private static JTextArea plaintext;
+    private JButton encrypt, decrypt, lock, unlock, hide, save, open;
+    private static JPasswordField password;
+    private JLabel passwordLabel;
+    private JButton about;
     private String tmpPlaintext = "";
     private boolean hidden = false;
     private JFileChooser fileChooser;
-    private JScrollPane spPlain;
-    private String aboutString = "";
+    private JScrollPane plaintextPane;
     private JMenuBar mb;
     private JMenu editMenu;
     private JMenu operationMenu;
@@ -834,7 +906,6 @@ public class Panther extends JFrame implements Updatable
     private JMenuItem aboutMenuItem;
     private CipherRunnable cipherRunnable;
     private String digestAlgorithm;
-
     /**
      * The Panther version description.
      * The Panther version description follows this pattern:
@@ -851,11 +922,10 @@ public class Panther extends JFrame implements Updatable
      * 4) the micro release number may optionally be followed by or replaced by
      * (in the case that it is 0) the release type 'a' for alpha, 'b' for beta.
      */
-    public static String VERSION;
-
+    public static final String VERSION = "4.0";
+    public static final String BUNDLE_PATH = "org.tamalin.panther.resources.labels";
     /**
      * The text that represents the copyright of the program.
      */
-    public static String COPYRIGHT_TEXT;
-    public static boolean verbose = false;
+    private static final Logger logger = Logger.getLogger("org.tamalin.panther");
 }

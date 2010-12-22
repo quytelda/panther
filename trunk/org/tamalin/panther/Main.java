@@ -19,6 +19,7 @@ package org.tamalin.panther;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Locale;
+import java.util.logging.Level;
 
 /**
  * This is the main class where the program starts.  It contains the main method and parses
@@ -46,15 +47,23 @@ public class Main
         {
             if (args[0].equals("-h") || args[0].equals("--help") || args[0].equals("-a") || args[0].equals("--ayudas") || args[0].equals("--aiuto"))
             {
-
+                /* Print command line help. */
+                System.out.println("Usage: panther [options]");
+                System.out.println("\n-h\t--help\tPrint this help message.");
+                System.out.println("-V\t--version\t Print the program version.");
+                System.out.println("-v\t--verbose\tOutput detailed runtime information.");
             }
-            else if (args[0].equals("-v") || args[0].equals("--version"))
+            else if (args[0].equals("-V") || args[0].equals("--version"))
             {
-
+                System.out.println("Panther 4.0 Beta");
+            }
+            else if(args[0].equals("-v") || args[0].equals("--verbose"))
+            {
+                Panther.getLogger().setLevel(Level.ALL);
             }
             else
             {
-
+                System.err.println("Arguments Unrecognized!");
             }
         }
 
@@ -71,8 +80,7 @@ public class Main
 
             public void run()
             {
-                Panther m = new Panther(Locale.getDefault());
-                m.pack();
+                Panther m = new Panther();
                 m.setVisible(true);
                 if(System.getProperty("os.name").equals("Mac OS X"))
                 {
