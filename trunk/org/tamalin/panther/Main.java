@@ -63,7 +63,7 @@ public class Main
             }
             else
             {
-                System.err.println("Arguments Unrecognized!");
+                System.err.println("Error: Bad Arguments!");
             }
         }
 

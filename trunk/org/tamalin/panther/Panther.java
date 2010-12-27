@@ -15,6 +15,7 @@
  */
 package org.tamalin.panther;
 
+import com.sun.awt.AWTUtilities;
 import org.tamalin.panther.crypt.CipherRunnable;
 import org.tamalin.panther.file.FileSaveRunnable;
 
@@ -92,20 +93,14 @@ public class Panther extends JFrame implements Updatable
          * Load Saved Properties *
          *#######################*/
         Properties properties = new Properties();
-        String home = System.getProperty("user.home");
-        String path = null;
-        if(System.getProperty("os.name").equals("Mac OS X"))
-            path = home + "/Library/Preferences/org.tamalin.panther";
-        else
-            path = home + "./panthersleek";
+        File f = this.getPreferencesFile();
 
-        File f = new File(path);
-
-        if(!f.exists())
+        if(!f.exists()) // No saved preferences, use defaults.
         {
             initialize(f);
             digestAlgorithm = "SHA-1";
             this.pack();
+            hideOpacity = 0.05f;
         }
         else
         {
@@ -125,6 +120,7 @@ public class Panther extends JFrame implements Updatable
             int y = Integer.parseInt(properties.getProperty("y"));
             this.setSize(width, height);
             this.setLocation(x, y);
+            hideOpacity = Float.parseFloat(properties.getProperty("hidden_opacity"));
         }
 
 
@@ -280,7 +276,7 @@ public class Panther extends JFrame implements Updatable
                 }
                 catch (NoSuchAlgorithmException ex)
                 {
-                    ex.printStackTrace();
+                    Panther.this.showError("Unknown Algorithm", "The algorithm " + Panther.this.getDigestAlgorithm() + " was not found");
                 }
             }
         });
@@ -318,11 +314,11 @@ public class Panther extends JFrame implements Updatable
         /* Create the encryption thread. */
         byte[] data = plaintext.getText().getBytes();
         int cipherMode = Cipher.ENCRYPT_MODE;
-        char[] password = this.password.getPassword();
+        char[] pswd = password.getPassword();
 
         try
         {
-            cipherRunnable.init(data, cipherMode, password, Panther.this);
+            cipherRunnable.init(data, cipherMode, pswd, Panther.this);
         }
         catch (InvalidKeyException ex)
         {
@@ -477,18 +473,18 @@ public class Panther extends JFrame implements Updatable
             }
             catch (IOException ex)
             {
-                ex.printStackTrace();
+                logger.log(Level.WARNING, "Unable to close file input stream.", ex);
             }
         }
 
         /* Create the decryption thread. */
         /* The CipherRunnable must be initialized correctly before it can be run as a thread. */
         int cipherMode = Cipher.DECRYPT_MODE;
-        char[] password = this.password.getPassword();
+        char[] pswd = password.getPassword();
 
         try
         {
-            cipherRunnable.init(data, cipherMode, password, Panther.this);
+            cipherRunnable.init(data, cipherMode, pswd, Panther.this);
         }
         catch (InvalidKeyException ex)
         {
@@ -521,6 +517,7 @@ public class Panther extends JFrame implements Updatable
         if (preferencesDialog.isApproved())
         {
             this.setDigestAlgorithm(preferencesDialog.getChosenDigestAlgorithm());
+            hideOpacity = preferencesDialog.getHideOpacity();
         }
     }
 
@@ -591,23 +588,29 @@ public class Panther extends JFrame implements Updatable
     }
 
     /**
-     * This method hides the display by resizing it to {0, 0}
-     * if it is not already hidden.
-     * If the display is already hidden, the hide button
-     * sets the frame size to fit all the components, using pack().
+     * This method hides the main frame by reducing the opacity.
+     * If the frame is already hidden, the hide button sets the frame opacity back to 100%.
      */
     public void toggleHidden()
     {
         if (!hidden)
         {
-            logger.log(Level.INFO, "Setting frame size to {0, 0}.");
-            setSize(0, 0);
+            logger.log(Level.INFO, "Concealing Frame");
+            
+            if(AWTUtilities.isTranslucencySupported(AWTUtilities.Translucency.TRANSLUCENT));
+            {
+                AWTUtilities.setWindowOpacity(this, hideOpacity);
+            }
+
             hidden = true;
         }
         else
         {
-            logger.log(Level.INFO, "Packing frame.");
-            pack();
+            logger.log(Level.INFO, "Revealing frame.");
+            if(AWTUtilities.isTranslucencySupported(AWTUtilities.Translucency.TRANSLUCENT));
+            {
+                AWTUtilities.setWindowOpacity(this, 1f);
+            }
             hidden = false;
         }
     }
@@ -763,23 +766,23 @@ public class Panther extends JFrame implements Updatable
         }
         catch (ClassNotFoundException ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.WARNING, "Can't find Mac OS X configuration class.", ex);
         }
-        catch (NoSuchMethodException e)
+        catch (NoSuchMethodException ex)
         {
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Can't find Mac OS X configuration class.", ex);
         }
-        catch (InvocationTargetException e)
+        catch (InvocationTargetException ex)
         {
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Can't access Mac OS X configuration class.", ex);
         }
-        catch (InstantiationException e)
+        catch (InstantiationException ex)
         {
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Can't access Mac OS X configuration class.", ex);
         }
-        catch (IllegalAccessException e)
+        catch (IllegalAccessException ex)
         {
-            e.printStackTrace();
+            logger.log(Level.WARNING, "Can't access Mac OS X configuration class.", ex);
         }
     }
 
@@ -799,7 +802,7 @@ public class Panther extends JFrame implements Updatable
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
+            logger.log(Level.WARNING, "Unable to run the save thread.", ex);
         }
     }
 
@@ -864,6 +867,11 @@ public class Panther extends JFrame implements Updatable
         return digestAlgorithm;
     }
 
+    public static float getHideOpacity()
+    {
+        return hideOpacity;
+    }
+
     public void showError(String title, String message)
     {
         JOptionPane.showMessageDialog(null, message, title, JOptionPane.ERROR_MESSAGE);
@@ -881,6 +889,7 @@ public class Panther extends JFrame implements Updatable
         properties.setProperty("x", "" + this.getX());
         properties.setProperty("y", "" + this.getY());
         properties.setProperty("digest_algorithm", this.getDigestAlgorithm());
+        properties.setProperty("hidden_opacity", "" + hideOpacity);
         properties.store(new FileOutputStream(file), "Do not modify this file by hand!");
     }
     
@@ -906,6 +915,7 @@ public class Panther extends JFrame implements Updatable
     private JMenuItem aboutMenuItem;
     private CipherRunnable cipherRunnable;
     private String digestAlgorithm;
+    private static float hideOpacity;
     /**
      * The Panther version description.
      * The Panther version description follows this pattern:

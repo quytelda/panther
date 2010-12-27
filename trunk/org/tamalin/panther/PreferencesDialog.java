@@ -56,6 +56,11 @@ public class PreferencesDialog extends JDialog
         return digestAlgorithm;
     }
 
+    public float getHideOpacity()
+    {
+        return hideOpacity;
+    }
+
     public boolean isApproved()
     {
         return changeApproved;
@@ -66,10 +71,12 @@ public class PreferencesDialog extends JDialog
         digestSHA1Option = new JRadioButton("SHA-1 Fingerprints");
         digestMD5Option = new JRadioButton("MD5 Fingerprints");
         ButtonGroup bg = new ButtonGroup();
+        opacity = new JSpinner();
         JButton cancelOption = new JButton("Cancel");
         JButton okOption = new JButton("OK");
         JPanel bottomPanel = new JPanel();
         JPanel centerPanel = new JPanel();
+        JPanel opacityPanel = new JPanel();
 
         okOption.addActionListener(new ActionListener()
         {
@@ -81,6 +88,9 @@ public class PreferencesDialog extends JDialog
                     digestAlgorithm = SHA1;
                 else
                     digestAlgorithm = MD5;
+
+                hideOpacity = (Integer) opacity.getValue();
+                hideOpacity /= 100;
 
                 setVisible(false);
             }
@@ -99,24 +109,33 @@ public class PreferencesDialog extends JDialog
         bg.add(digestSHA1Option);
         bg.add(digestMD5Option);
 
+        int value = (int) (Panther.getHideOpacity() * 100);
+        SpinnerModel model = new SpinnerNumberModel(value, 0, 10, 1);
+        opacity.setModel(model);
+
         centerPanel.setLayout(new GridLayout(2, 1));
         centerPanel.add(digestSHA1Option);
         centerPanel.add(digestMD5Option);
         centerPanel.setBorder(BorderFactory.createTitledBorder("Fingerprint Algorithm"));
+        opacityPanel.add(opacity);
+        opacityPanel.setBorder(BorderFactory.createTitledBorder("Hidden Window Opacity"));
 
         bottomPanel.setLayout(new GridLayout(1, 2));
         bottomPanel.add(okOption);
         bottomPanel.add(cancelOption);
 
-        this.add(centerPanel, BorderLayout.CENTER);
+        this.add(centerPanel, BorderLayout.NORTH);
+        this.add(opacityPanel, BorderLayout.CENTER);
         this.add(bottomPanel, BorderLayout.SOUTH);
 
         pack();
     }
 
     private JRadioButton digestSHA1Option, digestMD5Option;
+    private JSpinner opacity;
     public static final String SHA1 = "SHA-1";
     public static final String MD5 = "MD5";
     private String digestAlgorithm;
+    private float hideOpacity;
     private boolean changeApproved = false;
 }

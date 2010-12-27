@@ -28,6 +28,9 @@ import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.logging.Level;
+import javax.swing.JOptionPane;
+import org.tamalin.panther.Panther;
 
 /**
  * The CipherRunnable class carries out all encryption and decryption operations using information passed to it by the calling method,
@@ -81,11 +84,12 @@ public class CipherRunnable implements Runnable
         }
         catch (IllegalBlockSizeException ex)
         {
-            ex.printStackTrace();
+            Panther.getLogger().log(Level.SEVERE, "Data follows an illegal block pattern.", ex);
         }
         catch (BadPaddingException ex)
         {
-            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Decryption failed: Access is denied.", "Decryption Failed", JOptionPane.ERROR_MESSAGE);
+            Panther.getLogger().log(Level.SEVERE, "Bad Padding Scheme", ex);
         }
     }
 
