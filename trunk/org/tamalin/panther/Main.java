@@ -18,7 +18,6 @@ package org.tamalin.panther;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Locale;
 import java.util.logging.Level;
 
 /**
