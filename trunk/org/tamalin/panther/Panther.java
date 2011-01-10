@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.net.URLConnection;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -519,55 +518,6 @@ public class Panther extends JFrame implements Updatable
             this.setDigestAlgorithm(preferencesDialog.getChosenDigestAlgorithm());
             hideOpacity = preferencesDialog.getHideOpacity();
         }
-    }
-
-    /**
-     * This method loads the language resources from file.
-     *
-     * @param language the language to load resources from: this parameter should be the language code of that
-     *                 language, obtainable by Locale.getLanguage();
-     * @return the properties object containing the resource strings.
-     */
-    public static Properties loadLanguageResources(String language)
-    {
-        Properties properties = new Properties();
-
-        /* Attempt to load required language resources. */
-        try
-        {
-            /* Detect unsupported languages. */
-            /* Supported languages are English, Spanish, and Italian, */
-            /* If it is not one of these, display an error message. */
-            if ((!language.equals("en")) && (!language.equals("sp")) && (!language.equals("it")))
-            {
-                String log = "Language Code " + language + " Unsupported";
-                logger.log(Level.WARNING, log);
-                JOptionPane.showMessageDialog(null, "Language code \"" + language + "\" is not supported.", "Unsupported Language", JOptionPane.ERROR_MESSAGE);
-                System.exit(0);
-            }
-
-            /*
-             * Load the labels for the correct locale.
-             * The multilingual language packets are located inside the .jar file in
-             * /org/tamalin/panther/resources/.  Each file which contains a series of
-             * keys and values is identified as so: labels_[language code].properties:
-             * For example, the English package is 'labels_en.properties'.
-             */
-            URL url = Panther.class.getResource("/org/tamalin/panther/resources/labels_" + language + ".properties");
-            URLConnection uc = url.openConnection();
-            properties.load(uc.getInputStream());
-        }
-        catch (FileNotFoundException ex) //File was not found
-        {
-            logger.log(Level.WARNING, "Resource File Not Found", ex);
-        }
-        catch (IOException ex) //Problem reading from the file
-        {
-            logger.log(Level.WARNING, "Input/Output Error to Resource Bundle", ex);
-            JOptionPane.showMessageDialog(null, "Error reading language packet.");
-        }
-
-        return properties;
     }
 
     /**
