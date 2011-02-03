@@ -18,38 +18,32 @@ package org.tamalin.panther.crypt;
 
 import org.tamalin.panther.Updatable;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
+import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.logging.Level;
 import javax.swing.JOptionPane;
 import org.tamalin.panther.Panther;
 
 /**
- * The CipherRunnable class carries out all encryption and decryption operations using information passed to it by the calling method,
- * presumably through the constructor.  The CipherRunnable class implements the runnable interface, so it can be run in it's own thread.
+ * The CipherEngine class carries out all encryption and decryption operations using information passed to it by the calling method,
+ * presumably through the constructor.  The CipherEngine class implements the runnable interface, so it can be run in it's own thread.
  *
  * @author Quytelda K. Gaiwin
  * @version 1.0
  * @since 4.0
  */
-public class CipherRunnable implements Runnable
+public class CipherEngine implements Runnable
 {
     /**
-     * Creates a new instance of CipherRunnable from the given algorithm.
+     * Creates a new instance of CipherEngine from the given algorithm.
      *
      * @param alg The Cipher Algorithm
      * @throws NoSuchAlgorithmException the cipher algorithm is invalid
      * @throws NoSuchPaddingException   There was an error with the padding.
      */
-    public CipherRunnable(String alg) throws NoSuchAlgorithmException, NoSuchPaddingException
+    public CipherEngine(String alg) throws NoSuchAlgorithmException, NoSuchPaddingException
     {
         algorithm = alg;
         cipher = Cipher.getInstance(alg);
@@ -63,7 +57,7 @@ public class CipherRunnable implements Runnable
         parent = p;
 
         /* Create an encryption key from the given password. */
-        Key key = makeKey(password, algorithm);
+        Key key = makeKey(password);
 
         /* For security reasons, the password array must be overwritten. */
         /* Overwrite the password array with 0s. */
@@ -93,7 +87,7 @@ public class CipherRunnable implements Runnable
         }
     }
 
-    private Key makeKey(char[] password, String algorithm) throws NoSuchAlgorithmException, InvalidKeySpecException
+    private Key makeKey(char[] password) throws NoSuchAlgorithmException, InvalidKeySpecException
     {
         /* Digest the password into a sequence of bytes the right length. */
         MessageDigest digest = MessageDigest.getInstance("MD5");

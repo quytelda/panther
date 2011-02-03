@@ -41,16 +41,17 @@ public class Main
      */
     public static void main(String[] args)
     {
+        // Set default logging threshold to Level.WARNING
+        Panther.getLogger().setLevel(Level.WARNING);
+
         /* Parse the command line arguments, if there are any. */
         if (args.length > 0)
         {
             if (args[0].equals("-h") || args[0].equals("--help") || args[0].equals("-a") || args[0].equals("--ayudas") || args[0].equals("--aiuto"))
             {
                 /* Print command line help. */
-                System.out.println("Usage: panther [options]");
-                System.out.println("\n-h\t--help\tPrint this help message.");
-                System.out.println("-V\t--version\t Print the program version.");
-                System.out.println("-v\t--verbose\tOutput detailed runtime information.");
+                printHelp();
+                System.exit(0);
             }
             else if (args[0].equals("-V") || args[0].equals("--version"))
             {
@@ -63,12 +64,15 @@ public class Main
             else
             {
                 System.err.println("Error: Bad Arguments!");
+                printHelp();
+                System.exit(1);
             }
         }
 
         /* -------------MAC OS X ONLY-------------- */
         if (System.getProperty("os.name").equals("Mac OS X"))
         {
+            Panther.getLogger().log(Level.INFO, "Setting Mac OS X Program Name");
             System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Panther");
         }
 
@@ -76,9 +80,9 @@ public class Main
         /* Run the program in the AWT Event Dispatch Thread. */
         EventQueue.invokeLater(new Runnable()
         {
-
             public void run()
             {
+                Panther.getLogger().log(Level.INFO, "Initializing and showing main window.");
                 Panther m = new Panther();
                 m.setVisible(true);
                 if(System.getProperty("os.name").equals("Mac OS X"))
@@ -92,5 +96,13 @@ public class Main
             }
         });
 
+    }
+
+    private static void printHelp()
+    {
+        System.out.println("Usage: panther [options]");
+        System.out.println("\n-h\t--help\tPrint this help message.");
+        System.out.println("-V\t--version\t Print the program version.");
+        System.out.println("-v\t--verbose\tOutput detailed runtime information.");
     }
 }

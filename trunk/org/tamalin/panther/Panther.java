@@ -15,27 +15,21 @@
  */
 package org.tamalin.panther;
 
-import com.sun.awt.AWTUtilities;
-import org.tamalin.panther.crypt.CipherRunnable;
+import org.tamalin.panther.crypt.CipherEngine;
 import org.tamalin.panther.file.FileSaveRunnable;
 
+import com.sun.awt.AWTUtilities;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Locale;
 import java.util.Properties;
@@ -75,6 +69,7 @@ public class Panther extends JFrame implements Updatable
          */
         if (System.getProperty("os.name").equals("Mac OS X"))
         {
+            logger.log(Level.INFO, "Configuring Mac OS X System Properties");
             this.OSXConfig();
         }
 
@@ -91,11 +86,13 @@ public class Panther extends JFrame implements Updatable
         /*########################
          * Load Saved Properties *
          *#######################*/
+        logger.log(Level.INFO, "Loading saved preferences.");
         Properties properties = new Properties();
         File f = this.getPreferencesFile();
 
         if(!f.exists()) // No saved preferences, use defaults.
         {
+            logger.info("Preferences file not found.  Using defaults.");
             initialize(f);
             digestAlgorithm = "SHA-1";
             this.pack();
@@ -103,6 +100,7 @@ public class Panther extends JFrame implements Updatable
         }
         else
         {
+            logger.log(Level.INFO, "Loading preferences.");
             try
             {
                 properties.load(new FileInputStream(f));
@@ -123,10 +121,10 @@ public class Panther extends JFrame implements Updatable
         }
 
 
-        /* Try to instantiate a CipherRunnable with the AES algorithm. */
+        /* Try to instantiate a CipherEngine with the AES algorithm. */
         try
         {
-            cipherRunnable = new CipherRunnable("AES");
+            cipherRunnable = new CipherEngine("AES");
         }
         catch (NoSuchAlgorithmException ex)
         {
@@ -168,6 +166,26 @@ public class Panther extends JFrame implements Updatable
             }
         });
 
+        ActionListener openActionListener = new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                if(fileChooser == null)
+                    fileChooser = new JFileChooser();
+
+                int confirmed = fileChooser.showOpenDialog(Panther.this);
+
+                if(confirmed == JFileChooser.APPROVE_OPTION)
+                {
+                    File file = fileChooser.getSelectedFile();
+                    byte[] b = readFile(file);
+                    plaintext.setText(new String(b));
+                }
+            }
+        };
+        open.addActionListener(openActionListener);
+        openFileItem.addActionListener(openActionListener);
+
         hide.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent evt)
@@ -175,6 +193,15 @@ public class Panther extends JFrame implements Updatable
                 /* Hide the program window from immediate view. */
                 Panther.this.toggleHidden();
             }
+        });
+
+        hideItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent ae)
+            {
+                Panther.this.toggleHidden();
+            }
+
         });
 
         lock.addActionListener(new ActionListener()
@@ -447,7 +474,6 @@ public class Panther extends JFrame implements Updatable
         try
         {
             fis = new FileInputStream(file);
-            //noinspection ResultOfMethodCallIgnored
             fis.read(data);
         }
         catch (FileNotFoundException ex)
@@ -477,7 +503,7 @@ public class Panther extends JFrame implements Updatable
         }
 
         /* Create the decryption thread. */
-        /* The CipherRunnable must be initialized correctly before it can be run as a thread. */
+        /* The CipherEngine must be initialized correctly before it can be run as a thread. */
         int cipherMode = Cipher.DECRYPT_MODE;
         char[] pswd = password.getPassword();
 
@@ -503,6 +529,30 @@ public class Panther extends JFrame implements Updatable
 
         /* Main the thread. */
         decryptionThread.start();
+    }
+
+    public byte[] readFile(File file)
+    {
+        if(!file.exists())
+            return null;
+
+        byte[] bytes = new byte[(int) file.length()];
+        try
+        {
+            FileInputStream fis = new FileInputStream(file);
+            fis.read(bytes);
+            return bytes;
+        }
+        catch (FileNotFoundException ex)
+        {
+            logger.log(Level.SEVERE, "Attempting to open file that does not exist!", ex);
+        }
+        catch(IOException ex)
+        {
+            logger.log(Level.SEVERE, "I/O error while reading file.", ex);
+        }
+
+        return null;
     }
 
     /**
@@ -545,7 +595,7 @@ public class Panther extends JFrame implements Updatable
     {
         if (!hidden)
         {
-            logger.log(Level.INFO, "Concealing Frame");
+            logger.log(Level.INFO, "Concealing frame.");
             
             if(AWTUtilities.isTranslucencySupported(AWTUtilities.Translucency.TRANSLUCENT));
             {
@@ -863,7 +913,7 @@ public class Panther extends JFrame implements Updatable
     private JMenuItem openFileItem, saveFileItem, editPreferencesItem;
     private JMenuItem encryptItem, decryptItem, fingerprintItem, lockItem, unlockItem, hideItem;
     private JMenuItem aboutMenuItem;
-    private CipherRunnable cipherRunnable;
+    private CipherEngine cipherRunnable;
     private String digestAlgorithm;
     private static float hideOpacity;
     /**
@@ -885,7 +935,7 @@ public class Panther extends JFrame implements Updatable
     public static final String VERSION = "4.0";
     public static final String BUNDLE_PATH = "org.tamalin.panther.resources.labels";
     /**
-     * The text that represents the copyright of the program.
+     * The logger for Panther.
      */
     private static final Logger logger = Logger.getLogger("org.tamalin.panther");
 }
