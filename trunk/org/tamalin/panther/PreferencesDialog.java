@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Quytelda K. Gaiwin
+ * Copyright 2011 Quytelda K. Gaiwin
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.awt.event.ActionListener;
  * The user options and preferences.
  *
  * @author Quytelda K. Gaiwin
- * @version 2.0
  * @since 3.1
  */
 public class PreferencesDialog extends JDialog

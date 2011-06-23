@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Quytelda K. Gaiwin
+ * Copyright 2011 Quytelda K. Gaiwin
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ package org.tamalin.panther;
  * @author Quytelda K. Gaiwin
  * Date: Jun 26, 2010
  * Time: 8:30:42 PM
- * @version 1.0
  * @since 4.0
  */
 public interface Updatable

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Quytelda K. Gaiwin
+ * Copyright 2011 Quytelda K. Gaiwin
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,7 +41,6 @@ import java.util.logging.*;
  * It contains the main method, and most of the GUI code.
  *
  * @author Quytelda K. Gaiwin
- * @version 4.0
  * @since 1.0
  */
 public class Panther extends JFrame implements Updatable
@@ -626,15 +625,22 @@ public class Panther extends JFrame implements Updatable
         unlock.setEnabled(lock);
         if (lock)
         {
+            // Lock frame
             tmpPlaintext = plaintext.getText();
             plaintext.setText("");
             password.setText("");
+
+            // Disable menubar
+            mb.setEnabled(false);
         }
         else
         {
             // Unhide plaintext
             plaintext.setText(tmpPlaintext);
             tmpPlaintext = null;
+
+            //Enable menubar
+            mb.setEnabled(true);
 
             //Repaint and revalidate plaintext to prevent the
             //cursor from disappearing after locking
@@ -744,6 +750,15 @@ public class Panther extends JFrame implements Updatable
         helpMenu.add(aboutMenuItem);
 
         this.setJMenuBar(mb);
+
+        /* ---------- Mac OS X Only ----------- */
+        /* Remove duplicate menu items on Mac OS X;
+         * These items are already provided by the system. */
+        if (System.getProperty("os.name").equals("Mac OS X"))
+        {
+            helpMenu.remove(aboutMenuItem);
+            editMenu.setVisible(false);
+        }
 
 
         /* Set the button mnemonics.  Each mnemonic character should be the first character in the
@@ -859,7 +874,7 @@ public class Panther extends JFrame implements Updatable
 
     public void showAbout()
     {
-        String info = "<html><center><b>Panther " + VERSION + "</b><br /><small>© 2010-2011 Tamalin<br />Under the Apache 2.0 License</small></center></html>";
+        String info = "<html><center><b>Panther " + VERSION + "</b><br /><small>&copy; 2011 Tamalin<br />Under the Apache 2.0 License</small></center></html>";
         JOptionPane.showMessageDialog(Panther.this, info, about.getText(), JOptionPane.INFORMATION_MESSAGE);
     }
 

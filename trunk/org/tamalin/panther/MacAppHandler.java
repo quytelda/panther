@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Quytelda K. Gaiwin
+ * Copyright 2011 Quytelda K. Gaiwin
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import java.util.logging.Level;
  * Date: Aug 6, 2010
  * Time: 6:38:24 PM
  * @author Quytelda K. Gaiwin
- * @version 1.1
  * @since 4.0
  */
 

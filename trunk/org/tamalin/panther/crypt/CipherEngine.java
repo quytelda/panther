@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 Quytelda K. Gaiwin
+ * Copyright 2011 Quytelda K. Gaiwin
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import org.tamalin.panther.Panther;
  * presumably through the constructor.  The CipherEngine class implements the runnable interface, so it can be run in it's own thread.
  *
  * @author Quytelda K. Gaiwin
- * @version 1.0
  * @since 4.0
  */
 public class CipherEngine implements Runnable
