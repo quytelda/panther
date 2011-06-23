@@ -632,10 +632,16 @@ public class Panther extends JFrame implements Updatable
         }
         else
         {
+            // Unhide plaintext
             plaintext.setText(tmpPlaintext);
             tmpPlaintext = null;
-        }
 
+            //Repaint and revalidate plaintext to prevent the
+            //cursor from disappearing after locking
+            this.repaint();
+            plaintext.revalidate();
+            password.revalidate();
+        }
     }
 
     private File getPreferencesFile()

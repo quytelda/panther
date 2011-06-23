@@ -79,6 +79,7 @@ public class CipherEngine implements Runnable
         catch (IllegalBlockSizeException ex)
         {
             Panther.getLogger().log(Level.SEVERE, "Data follows an illegal block pattern.", ex);
+            JOptionPane.showMessageDialog(null, "This file is invalid (Illegal Block Size)!", "Decryption Failed", JOptionPane.ERROR_MESSAGE);
         }
         catch (BadPaddingException ex)
         {
