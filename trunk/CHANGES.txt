@@ -1,0 +1,25 @@
+Version 4.0.0 (June 24, 2011)
+pkg: http://www.tamalin.org/panther/4.0
+src: http://panthercrypt.googlecode.com/svn/trunk, r18
+
+New features include:
+	* Rewrote hide feature to make window transparent
+	* Improved Mac OS X compatibility
+	* Moved important elements into unified toolbar
+	* Added ability to choose fingerprint algorithm
+	* Updated preferences dialog
+	* Updated about dialog
+	* Removed redundant code to make behavior more consistent
+	* Added message digest hex code functionality
+	* Improved language resources
+	* Added logging features and verbose mode
+	* Updated internationalization mechanism
+	
+Bug Fixes:
+	* repaired compilation issue related to Apple-only libraries
+	* fixed window resizing issue
+	* repaired fingerprint dialog sizing issue
+	* repaired issue where cursor disappears after locking
+	* repaired locking functionality to include menubars
+	* fixed preference file location
+	* resolved property saving issue
