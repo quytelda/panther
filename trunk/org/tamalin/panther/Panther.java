@@ -23,8 +23,7 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -327,6 +326,21 @@ public class Panther extends JFrame implements Updatable
             public void actionPerformed(ActionEvent evt)
             {
                 decrypt();
+            }
+        });
+
+        this.addWindowListener(new WindowAdapter()
+        {
+            public void windowClosing(WindowEvent e)
+            {   
+                try
+                {
+                    cleanUp();
+                }
+                catch(IOException ex)
+                {
+                    logger.log(Level.WARNING, "Unable to write properties.", ex);
+                }
             }
         });
     }
@@ -657,7 +671,7 @@ public class Panther extends JFrame implements Updatable
         if(System.getProperty("os.name").equals("Mac OS X"))
             path = home + "/Library/Preferences/org.tamalin.panther";
         else
-            path = home + "./panthersleek";
+            path = home + "/.panther";
 
         return new File(path);
     }
@@ -864,7 +878,7 @@ public class Panther extends JFrame implements Updatable
      * @param data the data to be digested
      * @return the message digest as a byte array
      * @throws NoSuchAlgorithmException throws a no such algorithm exception when Panther.getDigestAlgorithm() returns
-     *                                  an algorithm which is not supported or known under the current provider.
+     * an algorithm which is not supported or known under the current provider.
      */
     public byte[] computeFingerprint(byte[] data) throws NoSuchAlgorithmException
     {
@@ -903,6 +917,7 @@ public class Panther extends JFrame implements Updatable
         /*##################
          * Save Properties *
          *#################*/
+        logger.log(Level.INFO, "Saving program properties.");
         Properties properties = new Properties();
         File file = this.getPreferencesFile();
         properties.setProperty("height", "" + this.getHeight());
@@ -939,9 +954,6 @@ public class Panther extends JFrame implements Updatable
     private static float hideOpacity;
     /**
      * The Panther version description.
-     * The Panther version description follows this pattern:
-     * [release number] [release month] [release year]
-     * =====================================================
      * The individual release number consists of three
      * parts separated by periods:
      * 1) the major version number - For major changes that introduce
