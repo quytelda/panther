@@ -1,0 +1,5 @@
+Panther
+Copyright 2008-2010 Tamalin
+
+This product includes software developed at
+Tamalin (http://www.tamalin.org/).
