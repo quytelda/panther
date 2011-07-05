@@ -1,6 +1,6 @@
 Version 4.0.0 (June 24, 2011)
 pkg: http://www.tamalin.org/panther/4.0
-src: http://panthercrypt.googlecode.com/svn/trunk, r18
+src: http://panthercrypt.googlecode.com/svn/branch/4.0
 
 New features include:
 	* Rewrote hide feature to make window transparent
