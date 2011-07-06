@@ -1,0 +1,18 @@
+PACKAGE/INSTALLER
+To install a package, download the correct package for your operating system from [http://www.tamalin.org/panther].  All packages except the JAR file are automatic installers, which can be executed directly to install the program.
+
+DEPENDS
+JRE or JDK 6.0+ [http://java.oracle.com]
+
+SOURCE CODE
+To compile the source code in this package, you will need the Sun (now Oracle) Java JDK, available for free download at http://java.oracle.com.  Once you have these tools installed on your system, locate the source directory tree in the terminal (e.g. /Users/username/Downloads/panther-4.0.0).  The top level of the source tree should include the directory 'org'.  Once there, invoke the Java compiler to compile the tree:
+
+$ mkdir ../bin
+$ javac -g -d ../bin org/tamalin/panther/Main.java
+
+If the operation is successful, the generated class files will be found in the ../bin directory.  To execute the program, change to the directory where the generated class files are, and invoke Java to run the Main class:
+
+$ cd ../bin
+$ java org.tamalin.panther.Main [-v]
+
+The optional -v flag can be used to run verbose mode.  The program should launch directly, and prompt for a new master password.  To install the generated class files if so desired, copy them to wherever you see fit on your operating system, and a short script can be created to launch the program from the command line or a graphical environment.
